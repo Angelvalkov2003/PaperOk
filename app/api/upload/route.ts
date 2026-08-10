@@ -1,34 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
-import { v2 as cloudinary } from "cloudinary";
+import { cloudinary } from "lib/cloudinary";
 import { isAdminRequest } from "lib/admin-auth";
+import { isLikelyImageFile } from "lib/image-file";
 
 /** Hard server-side cap after client compression (bytes) */
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
+function isCloudinaryConfigured(): boolean {
+  if (process.env.CLOUDINARY_URL) return true;
+  return !!(
+    process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Support both CLOUDINARY_URL and individual env vars
-    const hasCloudinaryUrl = !!process.env.CLOUDINARY_URL;
-    const hasIndividualVars = !!(
-      process.env.CLOUDINARY_CLOUD_NAME &&
-      process.env.CLOUDINARY_API_KEY &&
-      process.env.CLOUDINARY_API_SECRET
-    );
-
-    if (!hasCloudinaryUrl && !hasIndividualVars) {
+    if (!isCloudinaryConfigured()) {
       console.error("Cloudinary configuration missing");
       return NextResponse.json(
         {
           error:
-            "Cloudinary configuration is missing. Please set CLOUDINARY_URL or individual CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.",
+            "Cloudinary не е конфигуриран. Добави CLOUDINARY_URL (или CLOUDINARY_CLOUD_NAME + CLOUDINARY_API_KEY + CLOUDINARY_API_SECRET) в .env.local / hosting env и рестартирай сървъра.",
         },
         { status: 500 },
       );
     }
 
+    // Ensure SDK is configured even when only individual vars are set
+    if (
+      !process.env.CLOUDINARY_URL &&
+      process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET
+    ) {
+      cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+      });
+    }
+
     if (!isAdminRequest(request)) {
       return NextResponse.json(
-        { error: "Unauthorized — admin login required" },
+        { error: "Не си влязъл като админ. Влез отново в /admin/login." },
         { status: 401 },
       );
     }
@@ -40,7 +56,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    if (!file.type?.startsWith("image/")) {
+    if (!isLikelyImageFile(file)) {
       return NextResponse.json(
         { error: "Моля, избери валиден файл със снимка" },
         { status: 400 },

@@ -3,6 +3,7 @@
 import { useState, useRef, useId } from "react";
 import { toast } from "sonner";
 import { uploadImageFile } from "lib/upload-image";
+import { IMAGE_FILE_ACCEPT } from "lib/image-file";
 
 interface ImageUploadButtonProps {
   onUploadComplete: (url: string) => void;
@@ -48,7 +49,7 @@ export function ImageUploadButton({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept={IMAGE_FILE_ACCEPT}
         onChange={handleFileSelect}
         className="hidden"
         id={inputId}

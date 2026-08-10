@@ -14,6 +14,7 @@ import {
 } from "lib/category-tree";
 import { formatHandle, generateHandleFromTitle } from "lib/slug";
 import { uploadImageFile } from "lib/upload-image";
+import { IMAGE_FILE_ACCEPT } from "lib/image-file";
 
 interface ProductFormData {
   handle: string;
@@ -144,7 +145,7 @@ export function ProductForm({ product, collections }: ProductFormProps) {
     // Create a temporary file input to trigger file selection
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*";
+    input.accept = IMAGE_FILE_ACCEPT;
     input.onchange = async (e: Event) => {
       const target = e.target as HTMLInputElement;
       const file = target.files?.[0];

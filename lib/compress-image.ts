@@ -4,10 +4,36 @@
  * so we resize/compress in the browser first.
  */
 
+import { getImageFileExtension, isLikelyImageFile } from "lib/image-file";
+
 export const MAX_IMAGE_INPUT_BYTES = 15 * 1024 * 1024;
 /** Keep uploads safely under typical serverless body limits */
 export const MAX_IMAGE_UPLOAD_BYTES = 2.5 * 1024 * 1024;
 const MAX_DIMENSION = 2000;
+
+const EXT_TO_MIME: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+  webp: "image/webp",
+  avif: "image/avif",
+  bmp: "image/bmp",
+  svg: "image/svg+xml",
+  heic: "image/heic",
+  heif: "image/heif",
+};
+
+function withInferredMime(file: File): File {
+  if (file.type?.startsWith("image/")) return file;
+  const ext = getImageFileExtension(file.name);
+  const mime = EXT_TO_MIME[ext];
+  if (!mime) return file;
+  return new File([file], file.name, {
+    type: mime,
+    lastModified: file.lastModified,
+  });
+}
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -107,34 +133,54 @@ export async function compressImageFile(file: File): Promise<File> {
  * Validate and compress an image so it can be uploaded reliably.
  */
 export async function prepareImageForUpload(file: File): Promise<File> {
-  if (!file.type.startsWith("image/")) {
-    throw new Error("Моля, избери валиден файл със снимка");
+  const ext = getImageFileExtension(file.name);
+
+  if (!isLikelyImageFile(file)) {
+    throw new Error("Моля, избери валиден файл със снимка (JPG, PNG, WebP или GIF)");
   }
 
-  if (file.size > MAX_IMAGE_INPUT_BYTES) {
-    throw new Error("Файлът е твърде голям. Максималният размер е 15MB");
+  if (ext === "heic" || ext === "heif") {
+    throw new Error(
+      "HEIC/HEIF не се поддържа в браузъра. Конвертирай снимката в JPG или PNG и опитай отново.",
+    );
   }
 
-  // Already small enough — skip work (keeps SVG/GIF/small PNG intact when possible)
-  if (
-    file.size <= MAX_IMAGE_UPLOAD_BYTES &&
-    (file.type === "image/gif" ||
-      file.type === "image/svg+xml" ||
-      file.type === "image/webp" ||
-      file.type === "image/png" ||
-      file.type === "image/jpeg" ||
-      file.type === "image/jpg")
-  ) {
-    // Still compress huge-dimension JPEGs that happen to be under the byte cap
+  const workingFile = withInferredMime(file);
+
+  if (!workingFile.type.startsWith("image/")) {
     try {
-      const img = await loadImage(file);
-      if (Math.max(img.width, img.height) <= MAX_DIMENSION) {
-        return file;
-      }
+      await loadImage(workingFile);
     } catch {
-      return file;
+      throw new Error("Моля, избери валиден файл със снимка (JPG, PNG, WebP или GIF)");
     }
   }
 
-  return compressImageFile(file);
+  if (workingFile.size > MAX_IMAGE_INPUT_BYTES) {
+    throw new Error("Файлът е твърде голям. Максималният размер е 15MB");
+  }
+
+  const mime = workingFile.type;
+
+  // Already small enough — skip work (keeps SVG/GIF/small PNG intact when possible)
+  if (
+    workingFile.size <= MAX_IMAGE_UPLOAD_BYTES &&
+    (mime === "image/gif" ||
+      mime === "image/svg+xml" ||
+      mime === "image/webp" ||
+      mime === "image/png" ||
+      mime === "image/jpeg" ||
+      mime === "image/jpg")
+  ) {
+    // Still compress huge-dimension JPEGs that happen to be under the byte cap
+    try {
+      const img = await loadImage(workingFile);
+      if (Math.max(img.width, img.height) <= MAX_DIMENSION) {
+        return workingFile;
+      }
+    } catch {
+      return workingFile;
+    }
+  }
+
+  return compressImageFile(workingFile);
 }
