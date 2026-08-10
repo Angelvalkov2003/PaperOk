@@ -34,7 +34,13 @@ export function ImageUploadButton({
       onUploadComplete(url);
       toast.success("Снимката е качена успешно");
     } catch (error: any) {
-      console.error("Error uploading image:", error);
+      console.error("[upload-button] Error uploading image:", {
+        message: error?.message,
+        error,
+        file: file
+          ? { name: file.name, type: file.type, size: file.size }
+          : null,
+      });
       toast.error(error.message || "Грешка при качване на снимка");
     } finally {
       setUploading(false);

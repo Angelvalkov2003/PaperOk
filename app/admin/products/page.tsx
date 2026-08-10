@@ -8,7 +8,13 @@ import { ProductsFilter } from "components/admin/products-filter";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function ProductsTable({ products }: { products: any[] }) {
+function ProductsTable({
+  products,
+  search,
+}: {
+  products: any[];
+  search?: string;
+}) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
       <div className="overflow-x-auto">
@@ -45,7 +51,9 @@ function ProductsTable({ products }: { products: any[] }) {
             {products.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                  Няма продукти. Създай първия продукт!
+                  {search
+                    ? `Няма продукти за „${search}“`
+                    : "Няма продукти. Създай първия продукт!"}
                 </td>
               </tr>
             ) : (
@@ -129,16 +137,25 @@ function ProductsTable({ products }: { products: any[] }) {
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; sortBy?: string; sortOrder?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    q?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  }>;
 }) {
   const params = await searchParams;
   const category = params.category || undefined;
-  const sortBy = (params.sortBy as "price" | "sales" | "position" | "created_at") || "position";
+  const search = params.q || undefined;
+  const sortBy =
+    (params.sortBy as "price" | "sales" | "position" | "created_at") ||
+    "position";
   const sortOrder = (params.sortOrder as "asc" | "desc") || "asc";
 
   const [products, collections] = await Promise.all([
     getAllProductsForAdmin({
       category,
+      search,
       sortBy,
       sortOrder,
     }),
@@ -166,7 +183,7 @@ export default async function AdminProductsPage({
 
       <ProductsFilter collections={collections} />
 
-      <ProductsTable products={products} />
+      <ProductsTable products={products} search={search} />
     </div>
   );
 }

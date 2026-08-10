@@ -1,45 +1,89 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cloudinary } from "lib/cloudinary";
+import { v2 as cloudinary } from "cloudinary";
 import { isAdminRequest } from "lib/admin-auth";
 import { isLikelyImageFile } from "lib/image-file";
 
 /** Hard server-side cap after client compression (bytes) */
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
-function isCloudinaryConfigured(): boolean {
-  if (process.env.CLOUDINARY_URL) return true;
-  return !!(
-    process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET
+export const runtime = "nodejs";
+
+function parseCloudinaryUrl(url: string): {
+  cloudName: string;
+  apiKey: string;
+  apiSecret: string;
+} | null {
+  // cloudinary://api_key:api_secret@cloud_name
+  // Secret may contain URL-unsafe characters — avoid URL() parser.
+  const match = url.match(/^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/i);
+  if (!match) return null;
+  const [, apiKey, apiSecret, cloudName] = match;
+  if (!apiKey || !apiSecret || !cloudName) return null;
+  return {
+    apiKey: decodeURIComponent(apiKey),
+    apiSecret: decodeURIComponent(apiSecret),
+    cloudName: cloudName.replace(/\/$/, ""),
+  };
+}
+
+function configureCloudinary(): boolean {
+  const url = process.env.CLOUDINARY_URL?.trim();
+  if (url) {
+    const parsed = parseCloudinaryUrl(url);
+    if (!parsed) {
+      console.error("Invalid CLOUDINARY_URL format");
+      return false;
+    }
+    cloudinary.config({
+      cloud_name: parsed.cloudName,
+      api_key: parsed.apiKey,
+      api_secret: parsed.apiSecret,
+      secure: true,
+    });
+    return true;
+  }
+
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+  const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
+  const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+  if (!cloudName || !apiKey || !apiSecret) return false;
+
+  cloudinary.config({
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
+    secure: true,
+  });
+  return true;
+}
+
+function cloudinaryErrorMessage(error: unknown): string {
+  if (!error || typeof error !== "object") {
+    return "Failed to upload image";
+  }
+  const err = error as {
+    message?: string;
+    error?: { message?: string; http_code?: number };
+    http_code?: number;
+  };
+  return (
+    err.error?.message ||
+    err.message ||
+    (err.http_code ? `Cloudinary error (${err.http_code})` : "Failed to upload image")
   );
 }
 
 export async function POST(request: NextRequest) {
   try {
-    if (!isCloudinaryConfigured()) {
-      console.error("Cloudinary configuration missing");
+    if (!configureCloudinary()) {
+      console.error("Cloudinary configuration missing or invalid");
       return NextResponse.json(
         {
           error:
-            "Cloudinary не е конфигуриран. Добави CLOUDINARY_URL (или CLOUDINARY_CLOUD_NAME + CLOUDINARY_API_KEY + CLOUDINARY_API_SECRET) в .env.local / hosting env и рестартирай сървъра.",
+            "Cloudinary не е конфигуриран на сървъра. Добави CLOUDINARY_URL (или CLOUDINARY_CLOUD_NAME + CLOUDINARY_API_KEY + CLOUDINARY_API_SECRET) в hosting env и redeploy.",
         },
         { status: 500 },
       );
-    }
-
-    // Ensure SDK is configured even when only individual vars are set
-    if (
-      !process.env.CLOUDINARY_URL &&
-      process.env.CLOUDINARY_CLOUD_NAME &&
-      process.env.CLOUDINARY_API_KEY &&
-      process.env.CLOUDINARY_API_SECRET
-    ) {
-      cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET,
-      });
     }
 
     if (!isAdminRequest(request)) {
@@ -75,27 +119,15 @@ export async function POST(request: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const mime = file.type?.startsWith("image/") ? file.type : "image/jpeg";
+    // Base64 data URI — works reliably on Vercel; upload_stream often fails there
+    const dataUri = `data:${mime};base64,${buffer.toString("base64")}`;
 
-    // Stream upload — avoids base64 bloat that breaks large payloads
-    const result = await new Promise<any>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: "ecommerce",
-          resource_type: "image",
-          transformation: [
-            { width: 2000, height: 2000, crop: "limit", quality: "auto:good" },
-          ],
-        },
-        (error, uploadResult) => {
-          if (error) {
-            console.error("Cloudinary upload error:", error);
-            reject(error);
-          } else {
-            resolve(uploadResult);
-          }
-        },
-      );
-      stream.end(buffer);
+    const result = await cloudinary.uploader.upload(dataUri, {
+      folder: "ecommerce",
+      resource_type: "image",
+      // Client already compresses; keep upload simple (eager transforms often cause "General Error")
+      overwrite: false,
     });
 
     if (!result?.secure_url) {
@@ -106,10 +138,10 @@ export async function POST(request: NextRequest) {
       url: result.secure_url,
       publicId: result.public_id,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error uploading to Cloudinary:", error);
-    const errorMessage =
-      error.message || error.error?.message || "Failed to upload image";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    const message = cloudinaryErrorMessage(error);
+    console.error("[api/upload] failing with message:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

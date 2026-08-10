@@ -118,6 +118,13 @@ export function BlogForm({ post }: { post?: any }) {
         }));
         toast.success("Снимката е качена успешно");
       } catch (error: any) {
+        console.error("[blog-form] Error uploading image:", {
+          message: error?.message,
+          error,
+          file: file
+            ? { name: file.name, type: file.type, size: file.size }
+            : null,
+        });
         toast.error(error.message || "Грешка при качване на снимка");
       }
     };

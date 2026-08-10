@@ -81,6 +81,7 @@ export async function getProductOrderCount(productId: string): Promise<number> {
  */
 export async function getAllProductsForAdmin(params?: {
   category?: string;
+  search?: string;
   sortBy?: "price" | "sales" | "position" | "created_at";
   sortOrder?: "asc" | "desc";
 }) {
@@ -92,6 +93,15 @@ export async function getAllProductsForAdmin(params?: {
     // Filter by category if provided
     if (params?.category) {
       query = query.eq("category", params.category);
+    }
+
+    const search = params?.search?.trim();
+    if (search) {
+      // Case-insensitive match on title or handle
+      const escaped = search.replace(/[%_]/g, "\\$&");
+      query = query.or(
+        `title.ilike.%${escaped}%,handle.ilike.%${escaped}%`,
+      );
     }
 
     // Apply sorting

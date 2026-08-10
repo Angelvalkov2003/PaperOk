@@ -189,7 +189,13 @@ export function ProductForm({ product, collections }: ProductFormProps) {
 
         toast.success("Снимката е качена успешно");
       } catch (error: any) {
-        console.error("Error uploading image:", error);
+        console.error("[product-form] Error uploading image:", {
+          message: error?.message,
+          error,
+          file: file
+            ? { name: file.name, type: file.type, size: file.size }
+            : null,
+        });
         toast.error(error.message || "Грешка при качване на снимка");
         // Remove the failed image entry
         setFormData((prev) => ({
