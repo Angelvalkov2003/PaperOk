@@ -57,6 +57,7 @@ export async function createCollectionAction(data: CreateCollectionData) {
     revalidatePath("/admin/collections");
     revalidatePath("/admin");
     revalidatePath("/products");
+    revalidatePath("/api/collections");
     revalidatePath("/");
     return { success: true, collection };
   } catch (error: any) {
@@ -87,6 +88,7 @@ export async function updateCollectionAction(data: UpdateCollectionData) {
     revalidatePath(`/admin/collections/${data.id}`);
     revalidatePath("/admin");
     revalidatePath("/products");
+    revalidatePath("/api/collections");
     revalidatePath("/");
     return { success: true, collection };
   } catch (error: any) {
@@ -115,6 +117,7 @@ export async function deleteCollectionAction(collectionId: string) {
     revalidatePath("/admin/collections");
     revalidatePath("/admin");
     revalidatePath("/products");
+    revalidatePath("/api/collections");
     revalidatePath("/");
     return { success: true };
   } catch (error: any) {

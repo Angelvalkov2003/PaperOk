@@ -33,7 +33,7 @@ export default function ProductGridItems({
                 }}
                 src={product.featuredImage?.url}
                 fill
-                sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 50vw"
               />
             </Link>
           </Reveal>

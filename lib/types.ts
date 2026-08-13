@@ -79,6 +79,7 @@ export type Collection = {
   description?: string;
   parentId?: string | null;
   position?: number;
+  available?: boolean;
   updatedAt: string;
 };
 

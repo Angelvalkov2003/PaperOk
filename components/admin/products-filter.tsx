@@ -44,6 +44,11 @@ export function ProductsFilter({ collections }: ProductsFilterProps) {
       params.set("sortOrder", sortOrder);
     }
 
+    const currentPerPage = searchParams.get("perPage");
+    if (currentPerPage && currentPerPage !== "10") {
+      params.set("perPage", currentPerPage);
+    }
+
     const queryString = params.toString();
     const newUrl = queryString
       ? `/admin/products?${queryString}`

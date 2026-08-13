@@ -2,15 +2,20 @@ import {
   BookmarkIcon,
   BookOpenIcon,
   CalendarDaysIcon,
-  CubeIcon,
-  EnvelopeIcon,
-  HeartIcon,
+  ClipboardDocumentListIcon,
   IdentificationIcon,
   MegaphoneIcon,
+  RectangleStackIcon,
   TagIcon,
+  TicketIcon,
 } from "@heroicons/react/24/outline";
 import { PaperTexture } from "components/ui/paper-texture";
 import { Reveal } from "components/ui/reveal";
+import {
+  BUSINESS_GRID_CLASS,
+  BUSINESS_GRID_REVEAL_CLASS,
+  BusinessCard,
+} from "components/za-biznesa/business-card";
 import { PAPER_BACKGROUNDS, PAPER_OVERLAYS } from "lib/backgrounds";
 import type { ComponentType, SVGProps } from "react";
 
@@ -19,15 +24,15 @@ const CARD_BG = PAPER_BACKGROUNDS.petalsSoft;
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
 const products: { title: string; icon: IconComponent }[] = [
-  { title: "Рекламни картички", icon: MegaphoneIcon },
-  { title: "Благодарствени картички", icon: HeartIcon },
   { title: "Визитки", icon: IdentificationIcon },
-  { title: "Покани", icon: EnvelopeIcon },
+  { title: "Картички", icon: RectangleStackIcon },
   { title: "Етикети", icon: TagIcon },
-  { title: "Hang tags", icon: BookmarkIcon },
-  { title: "Бележници", icon: BookOpenIcon },
+  { title: "Брандирани картички", icon: MegaphoneIcon },
+  { title: "Ваучери", icon: TicketIcon },
   { title: "Календари", icon: CalendarDaysIcon },
-  { title: "Комплекти", icon: CubeIcon },
+  { title: "Бележници", icon: BookOpenIcon },
+  { title: "Менюта", icon: ClipboardDocumentListIcon },
+  { title: "Етикети за дрехи (Hang tags)", icon: BookmarkIcon },
 ];
 
 function ProductIcon({ icon: Icon }: { icon: IconComponent }) {
@@ -53,23 +58,28 @@ export function BusinessProducts() {
             Какво изработваме
           </h2>
         </Reveal>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={`${BUSINESS_GRID_CLASS} gap-4 sm:grid-cols-2 lg:grid-cols-3`}>
           {products.map((product, index) => (
-            <Reveal key={product.title} delay={index * 60} variant="up">
-              <div className="group hover-lift relative flex items-center gap-4 overflow-hidden rounded-xl border border-paper-border p-5 transition-colors hover:border-paper-green/30">
-                <PaperTexture
-                  src={CARD_BG}
-                  overlay={PAPER_OVERLAYS.white}
-                  sizes="(min-width: 1024px) 33vw, 50vw"
-                  quality={82}
-                />
-                <div className="relative z-10 flex items-center gap-4">
+            <Reveal
+              key={product.title}
+              delay={index * 60}
+              variant="up"
+              className={BUSINESS_GRID_REVEAL_CLASS}
+            >
+              <BusinessCard
+                textureSrc={CARD_BG}
+                textureSizes="(min-width: 1024px) 33vw, 50vw"
+                padding="md"
+                bodyClassName="justify-center"
+                className="group transition-colors hover:border-paper-green/30"
+              >
+                <div className="flex min-h-[4.75rem] items-center gap-4">
                   <ProductIcon icon={product.icon} />
-                  <span className="font-medium text-paper-heading">
+                  <span className="font-medium leading-snug text-paper-heading">
                     {product.title}
                   </span>
                 </div>
-              </div>
+              </BusinessCard>
             </Reveal>
           ))}
         </div>

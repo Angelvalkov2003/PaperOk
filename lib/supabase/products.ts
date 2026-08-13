@@ -1,5 +1,11 @@
 import type { Product, Collection } from "lib/types";
 import { getHandlesForCollectionFilter } from "lib/category-tree";
+import {
+  filterStorefrontCategories,
+  getVisibleCategoryHandles,
+  isCollectionVisibleOnStorefront,
+  type CategoryWithAvailability,
+} from "lib/category-visibility";
 import { isProductPlantable } from "lib/product-plantable";
 import { cache } from "react";
 import { createServiceClient } from "./service";
@@ -11,6 +17,27 @@ function isReactPostpone(error: unknown): boolean {
     error !== null &&
     "$$typeof" in error &&
     error.$$typeof === Symbol.for("react.postpone")
+  );
+}
+
+function toFlatCategories(collections: Collection[]): CategoryWithAvailability[] {
+  return collections.map((c) => ({
+    id: c.id,
+    handle: c.handle,
+    title: c.title,
+    description: c.description,
+    position: c.position ?? 0,
+    parent_id: c.parentId ?? null,
+    available: c.available,
+  }));
+}
+
+function filterProductsByVisibleCategories(
+  products: Product[],
+  visibleHandles: Set<string>,
+): Product[] {
+  return products.filter(
+    (p) => !p.category || visibleHandles.has(p.category),
   );
 }
 
@@ -35,6 +62,10 @@ export async function getProducts(params?: {
       .eq("available", true);
 
     const collectionHandle = params?.collection?.trim();
+    const allCollections = await getCollections();
+    const flatCategories = toFlatCategories(allCollections);
+    const visibleHandles = getVisibleCategoryHandles(flatCategories);
+
     let collectionFlat:
       | Array<{ id: string; handle: string; parent_id: string | null }>
       | null = null;
@@ -44,22 +75,28 @@ export async function getProducts(params?: {
     }
 
     if (params?.collection) {
-      const collections = await getCollections();
-      const flat = collections.map((c) => ({
-        id: c.id,
-        handle: c.handle,
-        title: c.title,
-        description: c.description,
-        position: c.position ?? 0,
-        parent_id: c.parentId ?? null,
-      }));
-      collectionFlat = flat.map((c) => ({
+      if (
+        !collectionHandle ||
+        !isCollectionVisibleOnStorefront(flatCategories, collectionHandle)
+      ) {
+        return [];
+      }
+
+      collectionFlat = flatCategories.map((c) => ({
         id: c.id,
         handle: c.handle,
         parent_id: c.parent_id,
       }));
 
-      const handles = getHandlesForCollectionFilter(flat, collectionHandle || "");
+      const handles = getHandlesForCollectionFilter(
+        flatCategories,
+        collectionHandle,
+      ).filter((h) => visibleHandles.has(h));
+
+      if (handles.length === 0) {
+        return [];
+      }
+
       if (handles.length === 1) {
         query = query.eq("category", handles[0]);
       } else {
@@ -67,9 +104,13 @@ export async function getProducts(params?: {
       }
     }
 
-    // Filter by multiple categories
+    // Filter by multiple categories (storefront-visible only)
     if (params?.categories && params.categories.length > 0) {
-      query = query.in("category", params.categories);
+      const visible = params.categories.filter((h) => visibleHandles.has(h));
+      if (visible.length === 0) {
+        return [];
+      }
+      query = query.in("category", visible);
     }
 
     // Filter by price range
@@ -206,6 +247,7 @@ export async function getProducts(params?: {
     }
 
     let products = data.map(transformProduct);
+    products = filterProductsByVisibleCategories(products, visibleHandles);
 
     // Filter only products on sale (have compareAtPrice > price)
     if (params?.onSaleOnly) {
@@ -224,6 +266,16 @@ export async function getProducts(params?: {
           ? ((b.compareAtPrice - b.price) / b.compareAtPrice) * 100
           : 0;
         return discountB - discountA;
+      });
+    }
+
+    // Parent category page: products assigned to this category first,
+    // then products from its subcategories (existing sort kept within each group).
+    if (collectionHandle) {
+      products = products.sort((a, b) => {
+        const aDirect = a.category === collectionHandle ? 0 : 1;
+        const bDirect = b.category === collectionHandle ? 0 : 1;
+        return aDirect - bDirect;
       });
     }
 
@@ -258,7 +310,17 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
       return null;
     }
 
-    return transformProduct(data);
+    const product = transformProduct(data);
+
+    if (product.category) {
+      const collections = await getCollections();
+      const flat = toFlatCategories(collections);
+      if (!isCollectionVisibleOnStorefront(flat, product.category)) {
+        return null;
+      }
+    }
+
+    return product;
   } catch (error) {
     // Don't catch React.postpone() - let it propagate for PPR
     if (isReactPostpone(error)) {
@@ -295,6 +357,7 @@ export async function getCollections(): Promise<Collection[]> {
       description: item.description || undefined,
       parentId: item.parent_id || null,
       position: item.position ?? 0,
+      available: item.available === true,
       updatedAt: item.updated_at || new Date().toISOString(),
     }));
   } catch (error) {
@@ -307,30 +370,35 @@ export async function getCollections(): Promise<Collection[]> {
 }
 
 /**
- * Storefront category tree for nav + sidebar.
- * Includes empty subcategories so shoppers can browse the full structure
- * (e.g. Подаръци → Тест before products are assigned).
+ * Storefront categories — only active categories with active ancestors.
  */
 export async function getStorefrontCollections(): Promise<Collection[]> {
-  return getCollections();
+  const all = await getCollections();
+  const flat = toFlatCategories(all);
+  const visibleIds = new Set(
+    filterStorefrontCategories(flat).map((c) => c.id),
+  );
+  return all.filter((c) => visibleIds.has(c.id));
+}
+
+export async function getStorefrontCollectionByHandle(
+  handle: string,
+): Promise<Collection | null> {
+  const collections = await getCollections();
+  const flat = toFlatCategories(collections);
+  if (!isCollectionVisibleOnStorefront(flat, handle)) {
+    return null;
+  }
+  return collections.find((c) => c.handle === handle) ?? null;
 }
 
 export async function getCollectionProducts(handle: string): Promise<Product[]> {
   try {
-    const supabase = createServiceClient();
-    
-    // Verify collection exists
-    const { data: collection, error } = await supabase
-      .from("collections")
-      .select("handle")
-      .eq("handle", handle)
-      .single();
-
-    if (error || !collection) {
+    const collection = await getStorefrontCollectionByHandle(handle);
+    if (!collection) {
       return [];
     }
 
-    // Use handle (which is stored in products.category) to filter products
     return getProducts({ collection: handle });
   } catch (error) {
     // Don't catch React.postpone() - let it propagate for PPR

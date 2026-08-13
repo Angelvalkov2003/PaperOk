@@ -2,6 +2,7 @@ import Footer from "components/layout/footer";
 import Grid from "components/grid";
 import ProductGridItems from "components/layout/product-grid-items";
 import { Breadcrumb } from "components/products/breadcrumb";
+import { CategoryMobileNav } from "components/products/category-mobile-nav";
 import { CategoryTreeSidebar } from "components/products/category-tree-sidebar";
 import { FilterButton } from "components/products/filter-button";
 import { SortFilter } from "components/products/sort-filter";
@@ -13,8 +14,9 @@ import {
   type FlatCategory,
 } from "lib/category-tree";
 import { PAPER_BACKGROUNDS, PAPER_OVERLAYS } from "lib/backgrounds";
-import { getProducts, getStorefrontCollections } from "lib/supabase/products";
+import { getProducts, getStorefrontCollections, getStorefrontCollectionByHandle } from "lib/supabase/products";
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Продукти",
@@ -68,7 +70,15 @@ export default async function ProductsPage({
     description: c.description,
     position: c.position ?? 0,
     parent_id: c.parentId ?? null,
+    available: c.available,
   }));
+
+  if (collection) {
+    const visible = await getStorefrontCollectionByHandle(collection);
+    if (!visible) {
+      notFound();
+    }
+  }
 
   const categoryTree = buildCategoryTree(flatCategories);
   const breadcrumbPath = collection
@@ -92,12 +102,12 @@ export default async function ProductsPage({
           sizes="100vw"
           quality={82}
         />
-        <div className="relative z-10 mx-auto flex max-w-7xl flex-row gap-4 px-3 py-6 text-paper-heading sm:gap-6 sm:px-4 sm:py-8 md:gap-8">
-        {/* Category Tree Sidebar — thin column on the left (mobile + desktop) */}
-        <aside className="w-[8.25rem] flex-none sm:w-44 md:w-56 lg:w-64">
+        <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-0 px-4 py-5 text-paper-heading sm:px-5 sm:py-7 lg:flex-row lg:gap-8 lg:px-8 lg:py-8">
+        {/* Desktop category sidebar */}
+        <aside className="hidden w-56 flex-none lg:block lg:w-64">
           <div className="sticky top-4">
             <Reveal variant="left">
-              <h2 className="mb-3 font-heading text-sm font-semibold tracking-wide text-paper-heading sm:mb-4 sm:text-lg">
+              <h2 className="mb-4 font-heading text-lg font-semibold tracking-wide text-paper-heading">
                 Категории
               </h2>
               <CategoryTreeSidebar
@@ -108,31 +118,33 @@ export default async function ProductsPage({
           </div>
         </aside>
 
-        {/* Main Content — products on the right */}
+        {/* Main content — full width on mobile */}
         <div className="min-w-0 flex-1 overflow-visible">
           <Reveal variant="fade">
             <Breadcrumb path={breadcrumbPath} />
           </Reveal>
 
           <Reveal className="mb-4" delay={80}>
-            <h1 className="font-heading text-3xl font-bold text-paper-heading">
+            <h1 className="font-heading text-2xl font-bold text-paper-heading sm:text-3xl">
               {currentCollection?.title || "Всички продукти"}
             </h1>
             {currentCollection?.description && (
-              <p className="mt-3 text-lg text-paper-text">
+              <p className="mt-2 text-base text-paper-text sm:mt-3 sm:text-lg">
                 {currentCollection.description}
               </p>
             )}
             {products.length > 0 && (
-              <p className="mt-3 text-paper-muted">
+              <p className="mt-2 text-sm text-paper-muted sm:mt-3 sm:text-base">
                 {products.length}{" "}
                 {products.length === 1 ? "продукт" : "продукта"}
               </p>
             )}
           </Reveal>
 
+          <CategoryMobileNav tree={categoryTree} currentHandle={collection} />
+
           {/* High z-index so sort/filter panels sit above products and footer */}
-          <div className="relative z-50 mb-8 flex flex-row items-center justify-end gap-2 overflow-visible sm:gap-3">
+          <div className="relative z-50 mb-6 flex flex-row items-center justify-end gap-2 overflow-visible sm:mb-8 sm:gap-3">
             <div className="relative z-50 shrink-0">
               <SortFilter />
             </div>
@@ -150,7 +162,7 @@ export default async function ProductsPage({
             </p>
           ) : (
             <div className="relative z-0">
-              <Grid className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              <Grid className="grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
                 <ProductGridItems products={products} />
               </Grid>
             </div>

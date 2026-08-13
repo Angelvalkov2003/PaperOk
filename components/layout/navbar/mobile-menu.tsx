@@ -59,36 +59,93 @@ function containsHandle(node: CategoryNode, handle: string): boolean {
   return node.children.some((child) => containsHandle(child, handle));
 }
 
-function MobileSubTree({
-  nodes,
+function MobileTreeNode({
+  node,
   onNavigate,
-  depth = 0,
+  current,
 }: {
-  nodes: CategoryNode[];
+  node: CategoryNode;
   onNavigate: () => void;
-  depth?: number;
+  current: string | null;
 }) {
+  const hasChildren = node.children.length > 0;
+  const isActive = current === node.handle;
+  const isAncestor = !!current && !isActive && containsHandle(node, current);
+  const [expanded, setExpanded] = useState(isActive || isAncestor);
+
+  useEffect(() => {
+    if (isActive || isAncestor) {
+      setExpanded(true);
+    }
+  }, [isActive, isAncestor]);
+
+  const linkClass = `min-w-0 flex-1 rounded-lg py-3.5 text-left text-[17px] font-medium tracking-wide transition-colors ${
+    isActive
+      ? "text-paper-green"
+      : "text-paper-heading hover:text-paper-green"
+  }`;
+
+  if (!hasChildren) {
+    return (
+      <li>
+        <Link
+          href={`/products?collection=${node.handle}`}
+          onClick={onNavigate}
+          className={`block rounded-xl px-3 py-3.5 text-[17px] font-medium tracking-wide transition-colors ${
+            isActive
+              ? "bg-paper-white/50 text-paper-green"
+              : "text-paper-text hover:bg-paper-white/40 hover:text-paper-green"
+          }`}
+        >
+          {node.title}
+        </Link>
+      </li>
+    );
+  }
+
   return (
-    <ul className={depth === 0 ? "mt-1 space-y-0.5 border-l border-paper-border/60 pl-3" : "mt-0.5 space-y-0.5 pl-3"}>
-      {nodes.map((node) => (
-        <li key={node.id}>
-          <Link
-            href={`/products?collection=${node.handle}`}
-            onClick={onNavigate}
-            className="block rounded-lg px-2 py-2 text-[15px] text-paper-text transition-colors hover:bg-paper-white/40 hover:text-paper-green"
-          >
-            {node.title}
-          </Link>
-          {node.children.length > 0 && (
-            <MobileSubTree
-              nodes={node.children}
+    <li>
+      <div
+        className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 ${
+          expanded || isActive ? "bg-paper-white/55" : ""
+        }`}
+      >
+        <Link
+          href={`/products?collection=${node.handle}`}
+          onClick={onNavigate}
+          className={linkClass}
+        >
+          {node.title}
+        </Link>
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-label={`${node.title} — подкатегории`}
+          onClick={() => setExpanded((v) => !v)}
+          className={`flex shrink-0 items-center justify-center py-3.5 transition-colors ${
+            expanded || isActive
+              ? "text-paper-green"
+              : "text-paper-heading hover:text-paper-green"
+          }`}
+        >
+          <ChevronDownIcon
+            className={`h-5 w-5 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
+          />
+        </button>
+      </div>
+      {expanded && (
+        <ul className="mt-0.5 space-y-0.5">
+          {node.children.map((child) => (
+            <MobileTreeNode
+              key={child.id}
+              node={child}
               onNavigate={onNavigate}
-              depth={depth + 1}
+              current={current}
             />
-          )}
-        </li>
-      ))}
-    </ul>
+          ))}
+        </ul>
+      )}
+    </li>
   );
 }
 
@@ -96,10 +153,12 @@ function MobileMenuItem({
   item,
   categories,
   onNavigate,
+  menuOpen,
 }: {
   item: MenuItem;
   categories: FlatCategory[];
   onNavigate: () => void;
+  menuOpen: boolean;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -116,6 +175,12 @@ function MobileMenuItem({
     pathname === "/products" &&
     !!current &&
     (current === handle || (!!root && containsHandle(root, current)));
+
+  useEffect(() => {
+    if (menuOpen && isActive) {
+      setExpanded(true);
+    }
+  }, [menuOpen, isActive]);
 
   const seeAllLabel = `Виж всички ${item.title.toLowerCase()}`;
 
@@ -154,26 +219,12 @@ function MobileMenuItem({
             </Link>
           </li>
           {children.map((child) => (
-            <li key={child.id}>
-              <Link
-                href={`/products?collection=${child.handle}`}
-                onClick={onNavigate}
-                className={`block rounded-lg px-2 py-2 text-[15px] transition-colors ${
-                  current === child.handle
-                    ? "bg-paper-white/50 text-paper-green"
-                    : "text-paper-text hover:bg-paper-white/40 hover:text-paper-green"
-                }`}
-              >
-                {child.title}
-              </Link>
-              {child.children.length > 0 && (
-                <MobileSubTree
-                  nodes={child.children}
-                  onNavigate={onNavigate}
-                  depth={1}
-                />
-              )}
-            </li>
+            <MobileTreeNode
+              key={child.id}
+              node={child}
+              onNavigate={onNavigate}
+              current={current}
+            />
           ))}
         </ul>
       )}
@@ -286,6 +337,7 @@ export default function MobileMenu({
                           item={item}
                           categories={categories}
                           onNavigate={closeMobileMenu}
+                          menuOpen={isOpen}
                         />
                       );
                     }

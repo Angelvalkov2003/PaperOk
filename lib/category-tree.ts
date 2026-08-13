@@ -7,6 +7,7 @@ export type CategoryNode = {
   description?: string;
   position: number;
   parent_id: string | null;
+  available?: boolean;
   children: CategoryNode[];
 };
 
@@ -17,6 +18,7 @@ export type FlatCategory = {
   description?: string;
   position: number;
   parent_id: string | null;
+  available?: boolean;
 };
 
 const MAIN_HANDLES = new Set(

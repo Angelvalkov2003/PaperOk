@@ -13,6 +13,7 @@ function revalidateStorefront() {
   revalidatePath("/admin/products");
   revalidatePath("/admin");
   revalidatePath("/products");
+  revalidatePath("/api/collections");
   revalidatePath("/");
   revalidatePath("/search");
 }

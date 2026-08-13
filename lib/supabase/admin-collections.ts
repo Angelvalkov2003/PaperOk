@@ -16,6 +16,7 @@ export interface CreateCollectionData {
   description?: string;
   position?: number;
   parent_id?: string | null;
+  available?: boolean;
 }
 
 export interface UpdateCollectionData extends Partial<CreateCollectionData> {
@@ -145,6 +146,7 @@ export async function createCollection(data: CreateCollectionData) {
       description: data.description || null,
       position: data.position ?? 0,
       parent_id: data.parent_id || null,
+      available: data.available === true,
       updated_at: new Date().toISOString(),
     };
 
@@ -200,6 +202,7 @@ export async function updateCollection(data: UpdateCollectionData) {
     if (data.description !== undefined) updateData.description = data.description || null;
     if (data.position !== undefined) updateData.position = data.position;
     if (data.parent_id !== undefined) updateData.parent_id = data.parent_id || null;
+    if (data.available !== undefined) updateData.available = data.available === true;
 
     const { data: collection, error } = await supabase
       .from("collections")

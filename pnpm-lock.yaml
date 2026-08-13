@@ -76,8 +76,8 @@ importers:
         specifier: 19.0.4
         version: 19.0.4(@types/react@19.0.12)
       baseline-browser-mapping:
-        specifier: ^2.9.14
-        version: 2.9.14
+        specifier: ^2.11.13
+        version: 2.11.13
       postcss:
         specifier: ^8.5.3
         version: 8.5.3
@@ -535,8 +535,9 @@ packages:
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
-  baseline-browser-mapping@2.9.14:
-    resolution: {integrity: sha512-B0xUquLkiGLgHhpPBqvl7GWegWBUNuujQ6kXd/r1U38ElPT6Ok8KZ8e+FpUGEc2ZoRQUzq/aUnaKFc/svWUGSg==}
+  baseline-browser-mapping@2.11.13:
+    resolution: {integrity: sha512-k9HNuUVMlqVjQ9UHzfPjIqiDbWw7WqT1AoT7GL8VwvF3r0ZfArtgiSPAlmupyNquNgOJHTuH4CKYf8ttMTWBTQ==}
+    engines: {node: '>=6.0.0'}
     hasBin: true
 
   call-bind-apply-helpers@1.0.2:
@@ -1359,7 +1360,7 @@ snapshots:
     dependencies:
       '@types/node': 22.13.10
 
-  baseline-browser-mapping@2.9.14: {}
+  baseline-browser-mapping@2.11.13: {}
 
   call-bind-apply-helpers@1.0.2:
     dependencies:

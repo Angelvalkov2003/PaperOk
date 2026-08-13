@@ -1,4 +1,7 @@
-import { getCollectionProducts, getCollections } from "lib/supabase/products";
+import {
+  getCollectionProducts,
+  getStorefrontCollectionByHandle,
+} from "lib/supabase/products";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -9,8 +12,7 @@ export async function generateMetadata(props: {
   params: Promise<{ collection: string }>;
 }): Promise<Metadata> {
   const params = await props.params;
-  const collections = await getCollections();
-  const collection = collections.find(c => c.handle === params.collection);
+  const collection = await getStorefrontCollectionByHandle(params.collection);
 
   if (!collection) return notFound();
 
@@ -25,13 +27,13 @@ export default async function CategoryPage(props: {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const params = await props.params;
-  const collections = await getCollections();
-  const collection = collections.find(c => c.handle === params.collection);
-  const products = await getCollectionProducts(params.collection);
+  const collection = await getStorefrontCollectionByHandle(params.collection);
 
   if (!collection) {
     return notFound();
   }
+
+  const products = await getCollectionProducts(params.collection);
 
   return (
     <section>
@@ -44,7 +46,7 @@ export default async function CategoryPage(props: {
         )}
         {products.length > 0 && (
           <p className="mt-2 text-paper-text">
-            {products.length} {products.length === 1 ? 'продукт' : 'продукта'}
+            {products.length} {products.length === 1 ? "продукт" : "продукта"}
           </p>
         )}
       </div>

@@ -1,8 +1,16 @@
-import { getAllProductsForAdmin } from "lib/supabase/admin-products";
+import {
+  getAllProductsForAdmin,
+} from "lib/supabase/admin-products";
+import {
+  parseAdminProductsPageSize,
+} from "lib/admin-products-list";
 import { getAllCollectionsForAdmin } from "lib/supabase/admin-collections";
 import Link from "next/link";
 import { DeleteProductButton } from "components/admin/delete-product-button";
 import { ProductsFilter } from "components/admin/products-filter";
+import { ProductsPagination } from "components/admin/products-pagination";
+import { VisibilityStatusBadge } from "components/admin/visibility-status-badge";
+import { Suspense } from "react";
 
 // Disable static generation for this page - always fetch fresh data
 export const dynamic = "force-dynamic";
@@ -11,9 +19,17 @@ export const revalidate = 0;
 function ProductsTable({
   products,
   search,
+  page,
+  pageSize,
+  total,
+  totalPages,
 }: {
   products: any[];
   search?: string;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
 }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -103,15 +119,7 @@ function ProductsTable({
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        product.available
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                          : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                      }`}
-                    >
-                      {product.available ? "Достъпен" : "Недостъпен"}
-                    </span>
+                    <VisibilityStatusBadge active={product.available === true} />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex gap-2">
@@ -130,6 +138,14 @@ function ProductsTable({
           </tbody>
         </table>
       </div>
+      <Suspense fallback={null}>
+        <ProductsPagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          totalPages={totalPages}
+        />
+      </Suspense>
     </div>
   );
 }
@@ -142,6 +158,8 @@ export default async function AdminProductsPage({
     q?: string;
     sortBy?: string;
     sortOrder?: string;
+    page?: string;
+    perPage?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -151,13 +169,17 @@ export default async function AdminProductsPage({
     (params.sortBy as "price" | "sales" | "position" | "created_at") ||
     "position";
   const sortOrder = (params.sortOrder as "asc" | "desc") || "asc";
+  const page = Math.max(1, Number.parseInt(params.page || "1", 10) || 1);
+  const pageSize = parseAdminProductsPageSize(params.perPage);
 
-  const [products, collections] = await Promise.all([
+  const [productList, collections] = await Promise.all([
     getAllProductsForAdmin({
       category,
       search,
       sortBy,
       sortOrder,
+      page,
+      pageSize,
     }),
     getAllCollectionsForAdmin(),
   ]);
@@ -183,7 +205,14 @@ export default async function AdminProductsPage({
 
       <ProductsFilter collections={collections} />
 
-      <ProductsTable products={products} search={search} />
+      <ProductsTable
+        products={productList.products}
+        search={search}
+        page={productList.page}
+        pageSize={productList.pageSize}
+        total={productList.total}
+        totalPages={productList.totalPages}
+      />
     </div>
   );
 }

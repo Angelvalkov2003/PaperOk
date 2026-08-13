@@ -10,7 +10,7 @@ import {
 } from "lib/category-tree";
 import { PAPER_BACKGROUNDS, PAPER_OVERLAYS } from "lib/backgrounds";
 import { FIXED_MENU, MAIN_MENU_SECTIONS } from "lib/constants";
-import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, ChevronRightIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -47,6 +47,9 @@ function isNavActive(
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+const NAV_LINK_CLASS =
+  "relative whitespace-nowrap pb-1 text-sm font-medium tracking-[0.02em] transition-colors xl:text-[0.9375rem]";
+
 function NavUnderline({ active }: { active: boolean }) {
   return (
     <span
@@ -77,7 +80,7 @@ function NavLink({
     <Link
       href={href}
       prefetch={true}
-      className={`relative whitespace-nowrap pb-1 text-[15px] font-medium tracking-[0.02em] transition-colors xl:text-base ${
+      className={`${NAV_LINK_CLASS} ${
         isActive
           ? "text-paper-green"
           : "text-paper-heading/80 hover:text-paper-green"
@@ -215,7 +218,7 @@ function CategoryNavItem({
         <Link
           href={href}
           prefetch={true}
-          className={`relative whitespace-nowrap pb-1 text-[15px] font-medium tracking-[0.02em] transition-colors xl:text-base ${
+          className={`${NAV_LINK_CLASS} ${
             isActive || open
               ? "text-paper-green"
               : "text-paper-heading/80 hover:text-paper-green"
@@ -236,7 +239,7 @@ function CategoryNavItem({
           }`}
         >
           <ChevronDownIcon
-            className={`h-3.5 w-3.5 transition-transform duration-300 ${
+            className={`h-3 w-3 shrink-0 transition-transform duration-300 xl:h-3.5 xl:w-3.5 ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -272,38 +275,80 @@ function CategoryNavItem({
 
 function SearchToggle() {
   const [open, setOpen] = useState(false);
+  const [rendered, setRendered] = useState(false);
+  const [shown, setShown] = useState(false);
+  const pathname = usePathname();
 
-  if (open) {
-    return (
-      <div className="absolute inset-x-0 top-full z-50 border-b border-paper-border bg-paper-bg px-4 py-3 shadow-sm lg:static lg:inset-auto lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
-        <Suspense fallback={<SearchSkeleton />}>
-          <Search onClose={() => setOpen(false)} compact />
-        </Suspense>
-      </div>
-    );
-  }
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (open) {
+      setRendered(true);
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setShown(true));
+      });
+      return () => cancelAnimationFrame(id);
+    }
+
+    setShown(false);
+    const timeout = window.setTimeout(() => setRendered(false), 300);
+    return () => window.clearTimeout(timeout);
+  }, [open]);
 
   return (
-    <button
-      type="button"
-      onClick={() => setOpen(true)}
-      aria-label="Търсене"
-      className="flex h-10 w-10 items-center justify-center rounded-full text-paper-text transition-colors hover:bg-paper-section hover:text-paper-green"
-    >
-      <svg
-        className="h-5 w-5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.5}
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? "Затвори търсене" : "Търсене"}
+        aria-expanded={open}
+        className="flex h-10 w-10 items-center justify-center rounded-full text-paper-text transition-colors hover:bg-paper-section hover:text-paper-green"
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-        />
-      </svg>
-    </button>
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.5}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+          />
+        </svg>
+      </button>
+
+      {rendered && (
+        <div className="absolute inset-x-0 top-full z-50 overflow-hidden">
+          <div
+            className={`border-b border-paper-border bg-paper-bg shadow-sm transition-[transform,opacity] duration-300 ease-out ${
+              shown
+                ? "translate-y-0 opacity-100"
+                : "-translate-y-full opacity-0"
+            }`}
+          >
+            <div className="mx-auto flex max-w-md items-center gap-2 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <Suspense fallback={<SearchSkeleton compact />}>
+                  <Search compact autoFocus onClose={() => setOpen(false)} />
+                </Suspense>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Затвори търсене"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-paper-muted transition-colors hover:bg-paper-section hover:text-paper-heading"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -311,7 +356,7 @@ function DesktopNav({ categories }: { categories: FlatCategory[] }) {
   const sectionByHandle = new Map(MAIN_MENU_SECTIONS.map((s) => [s.handle, s]));
 
   return (
-    <ul className="ml-3 hidden min-w-0 flex-1 items-start justify-start gap-5 overflow-visible pt-6 pl-2 lg:flex xl:ml-5 xl:gap-7 xl:pl-3 lg:pt-7">
+    <ul className="mt-2 hidden w-full items-center justify-center gap-x-5 overflow-visible border-t border-paper-border/35 pt-2.5 lg:flex xl:gap-x-8">
       {FIXED_MENU.map((item) => {
         const handle = collectionFromPath(item.path);
         const section = handle
@@ -377,40 +422,42 @@ export function NavbarClient() {
         />
         <div className="absolute inset-0 bg-[#E8D5B8]/30" />
       </div>
-      <nav className="relative z-10 mx-auto flex max-w-7xl items-start justify-between gap-3 px-4 pt-3 pb-3 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          prefetch={true}
-          className="flex shrink-0 items-start self-start"
-          aria-label="PaperOK — начална страница"
-        >
-          <SiteLogo
-            priority
-            responsive
-            className="h-12 w-auto sm:h-16 md:h-[4.75rem] lg:h-20"
-          />
-        </Link>
+      <nav className="relative z-10 mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8 lg:py-3">
+        <div className="flex items-center justify-between gap-4">
+          <Link
+            href="/"
+            prefetch={true}
+            className="flex shrink-0 items-center"
+            aria-label="PaperOK — начална страница"
+          >
+            <SiteLogo
+              priority
+              responsive
+              className="h-11 w-auto sm:h-14 md:h-16 lg:h-[4.25rem] xl:h-[4.75rem]"
+            />
+          </Link>
+
+          <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
+            <div className="hidden md:block">
+              <Suspense fallback={<SearchSkeleton compact />}>
+                <Search compact />
+              </Suspense>
+            </div>
+            <div className="md:hidden">
+              <SearchToggle />
+            </div>
+            <CartModal />
+            <div className="lg:hidden">
+              <Suspense fallback={null}>
+                <MobileMenu menu={[...FIXED_MENU]} categories={categories} />
+              </Suspense>
+            </div>
+          </div>
+        </div>
 
         <Suspense fallback={null}>
           <DesktopNav categories={categories} />
         </Suspense>
-
-        <div className="flex shrink-0 items-center gap-1 pt-5 sm:gap-2 lg:pt-[1.35rem]">
-          <div className="hidden md:block">
-            <Suspense fallback={<SearchSkeleton compact />}>
-              <Search compact />
-            </Suspense>
-          </div>
-          <div className="md:hidden">
-            <SearchToggle />
-          </div>
-          <CartModal />
-          <div className="lg:hidden">
-            <Suspense fallback={null}>
-              <MobileMenu menu={[...FIXED_MENU]} categories={categories} />
-            </Suspense>
-          </div>
-        </div>
       </nav>
     </header>
   );

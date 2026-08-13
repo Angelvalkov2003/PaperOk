@@ -16,6 +16,7 @@ export default async function AdminCollectionsPage() {
       description: c.description,
       position: c.position ?? 0,
       parent_id: c.parent_id || null,
+      available: c.available === true,
     })),
   );
 
@@ -55,6 +56,9 @@ export default async function AdminCollectionsPage() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Позиция
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Статус
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Действия

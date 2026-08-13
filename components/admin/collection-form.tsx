@@ -18,6 +18,7 @@ import {
 import { MAIN_MENU_SECTIONS } from "lib/constants";
 import { formatHandle, generateHandleFromTitle } from "lib/slug";
 import { FieldHint } from "./field-hint";
+import { VisibilityStatusBadge } from "./visibility-status-badge";
 
 interface CollectionFormData {
   handle: string;
@@ -26,6 +27,7 @@ interface CollectionFormData {
   position: string;
   main_menu_id: string;
   nested_parent_id: string;
+  available: boolean;
 }
 
 interface CollectionFormProps {
@@ -68,6 +70,7 @@ export function CollectionForm({
     position: collection?.position?.toString() || "0",
     main_menu_id: initialPlacement.main_menu_id,
     nested_parent_id: initialPlacement.nested_parent_id,
+    available: collection?.available === true,
   });
 
   const isEditingRoot = Boolean(
@@ -100,18 +103,18 @@ export function CollectionForm({
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
-    if (
-      !formData.handle ||
-      formData.handle === formatHandle(collection?.title || "")
-    ) {
-      setFormData({
-        ...formData,
-        title: newTitle,
-        handle: generateHandleFromTitle(newTitle),
-      });
-    } else {
-      setFormData({ ...formData, title: newTitle });
-    }
+    setFormData((prev) => {
+      const slugStillSynced =
+        !prev.handle || prev.handle === generateHandleFromTitle(prev.title);
+      if (slugStillSynced) {
+        return {
+          ...prev,
+          title: newTitle,
+          handle: generateHandleFromTitle(newTitle),
+        };
+      }
+      return { ...prev, title: newTitle };
+    });
   };
 
   const handleMainMenuChange = (mainMenuId: string) => {
@@ -186,6 +189,7 @@ export function CollectionForm({
         description: formData.description.trim() || undefined,
         position: parseInt(formData.position) || 0,
         parent_id,
+        available: formData.available,
       };
 
       let result;
@@ -281,8 +285,8 @@ export function CollectionForm({
                 <strong>
                   {missingMainMenus.map((m) => m.title).join(", ")}
                 </strong>
-                . Пуснете <code>next_migration.sql</code> в Supabase, за да се
-                създадат.
+                . Създайте ги от админ панела или пуснете{" "}
+                <code>seed_data.sql</code> в Supabase.
               </div>
             )}
             <div>
@@ -372,6 +376,51 @@ export function CollectionForm({
           Кратко описание на категорията. Помага на клиентите и за SEO —
           опиши за кого са продуктите и каква е ползата.
         </FieldHint>
+      </div>
+
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Видимост за клиентите
+          </label>
+          <VisibilityStatusBadge active={formData.available} />
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => setFormData({ ...formData, available: true })}
+            className={`flex-1 rounded-md border px-4 py-3 text-left text-sm transition-colors ${
+              formData.available
+                ? "border-green-500 bg-green-50 text-green-900 dark:border-green-600 dark:bg-green-950/30 dark:text-green-100"
+                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+            }`}
+          >
+            <span className="font-medium">🟢 Активен</span>
+            <span className="mt-0.5 block text-xs opacity-80">
+              Видим за клиентите
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFormData({ ...formData, available: false })}
+            className={`flex-1 rounded-md border px-4 py-3 text-left text-sm transition-colors ${
+              !formData.available
+                ? "border-gray-400 bg-gray-100 text-gray-900 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100"
+                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+            }`}
+          >
+            <span className="font-medium">⚪ Неактивен</span>
+            <span className="mt-0.5 block text-xs opacity-80">
+              Скрит от клиентите
+            </span>
+          </button>
+        </div>
+        <div className="mt-3">
+          <FieldHint>
+            Новите категории са скрити по подразбиране. Активирайте, когато
+            описанието, снимките и продуктите са готови.
+          </FieldHint>
+        </div>
       </div>
 
       <div className="flex gap-4">

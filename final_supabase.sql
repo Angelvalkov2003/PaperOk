@@ -5,7 +5,6 @@
 -- Пусни веднъж в: Supabase Dashboard → SQL Editor → New query
 --
 -- След това (по избор): seed_data.sql
--- За ъпдейт на СЪЩЕСТВУВАЩА база без drop: next_migration.sql
 --
 -- ⚠️  WARNING: DROPS all existing data in these tables!
 -- =============================================================================
@@ -31,15 +30,18 @@ CREATE TABLE collections (
     description TEXT,
     position    INTEGER NOT NULL DEFAULT 0,
     parent_id   UUID REFERENCES collections(id) ON DELETE SET NULL,
+    available   BOOLEAN NOT NULL DEFAULT false,
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_collections_handle    ON collections(handle);
 CREATE INDEX idx_collections_position  ON collections(position);
 CREATE INDEX idx_collections_parent_id ON collections(parent_id);
+CREATE INDEX idx_collections_available ON collections(available);
 
 COMMENT ON TABLE  collections            IS 'Product categories. Tree via parent_id. NULL parent = root.';
 COMMENT ON COLUMN collections.parent_id  IS 'Parent category. NULL = root category.';
+COMMENT ON COLUMN collections.available  IS 'When false, category is hidden from storefront nav, sidebar, search, and direct links.';
 
 -- =============================================================================
 -- 2. PRODUCTS
@@ -55,7 +57,7 @@ CREATE TABLE products (
     images           JSONB[] NOT NULL DEFAULT '{}',
     variants         JSONB NOT NULL DEFAULT '[]',
     category         TEXT,
-    available        BOOLEAN NOT NULL DEFAULT true,
+    available        BOOLEAN NOT NULL DEFAULT false,
     plantable        BOOLEAN NOT NULL DEFAULT true,
     position         INTEGER NOT NULL DEFAULT 0,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -231,7 +233,7 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contact_inquiries ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "public_read_collections" ON collections
-  FOR SELECT USING (true);
+  FOR SELECT USING (available = true);
 
 CREATE POLICY "public_read_products" ON products
   FOR SELECT USING (available = true);

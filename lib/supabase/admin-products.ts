@@ -1,5 +1,10 @@
 import { createServiceClient } from "./service";
 import type { Image, ProductSizeVariant } from "lib/types";
+import {
+  ADMIN_PRODUCTS_DEFAULT_PAGE_SIZE,
+  ADMIN_PRODUCTS_PAGE_SIZES,
+  type AdminProductsPageSize,
+} from "lib/admin-products-list";
 
 // Helper to check if error is React.postpone()
 function isReactPostpone(error: unknown): boolean {
@@ -76,6 +81,20 @@ export async function getProductOrderCount(productId: string): Promise<number> {
   }
 }
 
+export type { AdminProductsPageSize } from "lib/admin-products-list";
+export {
+  ADMIN_PRODUCTS_DEFAULT_PAGE_SIZE,
+  ADMIN_PRODUCTS_PAGE_SIZES,
+} from "lib/admin-products-list";
+
+export type AdminProductsListResult = {
+  products: Array<Record<string, unknown> & { orderCount: number }>;
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 /**
  * Get all products (including unavailable ones) for admin
  */
@@ -84,7 +103,9 @@ export async function getAllProductsForAdmin(params?: {
   search?: string;
   sortBy?: "price" | "sales" | "position" | "created_at";
   sortOrder?: "asc" | "desc";
-}) {
+  page?: number;
+  pageSize?: number;
+}): Promise<AdminProductsListResult> {
   try {
     const supabase = createServiceClient();
     
@@ -166,7 +187,26 @@ export async function getAllProductsForAdmin(params?: {
       });
     }
 
-    return productsWithCounts;
+    const rawPageSize = params?.pageSize ?? ADMIN_PRODUCTS_DEFAULT_PAGE_SIZE;
+    const pageSize = ADMIN_PRODUCTS_PAGE_SIZES.includes(
+      rawPageSize as AdminProductsPageSize,
+    )
+      ? rawPageSize
+      : ADMIN_PRODUCTS_DEFAULT_PAGE_SIZE;
+    const total = productsWithCounts.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const requestedPage = Math.max(1, params?.page ?? 1);
+    const page = Math.min(requestedPage, totalPages);
+    const offset = (page - 1) * pageSize;
+    const paginatedProducts = productsWithCounts.slice(offset, offset + pageSize);
+
+    return {
+      products: paginatedProducts,
+      total,
+      page,
+      pageSize,
+      totalPages,
+    };
   } catch (error) {
     // Don't catch React.postpone() - let it propagate for PPR
     if (isReactPostpone(error)) {
@@ -266,7 +306,7 @@ export async function createProduct(data: CreateProductData) {
       featured_image: data.featured_image || null,
       images: data.images || [],
       category: data.category || null,
-      available: data.available !== false,
+      available: data.available === true,
       plantable: data.plantable !== false,
       position: data.position ?? 0,
       variants: data.variants || [],

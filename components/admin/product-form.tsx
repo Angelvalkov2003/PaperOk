@@ -8,6 +8,7 @@ import type { Image, ProductSizeVariant } from "lib/types";
 import { ImageUploadButton } from "./image-upload-button";
 import { FieldHint } from "./field-hint";
 import { ProductVariantsEditor } from "./product-variants-editor";
+import { VisibilityStatusBadge } from "./visibility-status-badge";
 import {
   getProductCategoryGroups,
   type FlatCategory,
@@ -56,7 +57,7 @@ export function ProductForm({ product, collections }: ProductFormProps) {
         : "",
     featured_image_url: product?.featured_image?.url || "",
     category: product?.category || "",
-    available: product?.available !== false,
+    available: product?.available === true,
     plantable: product?.plantable !== false,
     position:
       product?.position !== undefined && product?.position !== null
@@ -262,49 +263,23 @@ export function ProductForm({ product, collections }: ProductFormProps) {
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
-    // Auto-generate handle from title if handle is empty
-    if (!formData.handle || formData.handle === formatHandle(product?.title || "")) {
-      setFormData({ 
-        ...formData, 
-        title: newTitle,
-        handle: generateHandleFromTitle(newTitle)
-      });
-    } else {
-      setFormData({ ...formData, title: newTitle });
-    }
+    setFormData((prev) => {
+      const slugStillSynced =
+        !prev.handle || prev.handle === generateHandleFromTitle(prev.title);
+      if (slugStillSynced) {
+        return {
+          ...prev,
+          title: newTitle,
+          handle: generateHandleFromTitle(newTitle),
+        };
+      }
+      return { ...prev, title: newTitle };
+    });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Handle (URL slug)
-          </label>
-          <input
-            type="text"
-            value={formData.handle}
-            onChange={handleHandleChange}
-            className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
-              handleError 
-                ? "border-red-500 dark:border-red-500" 
-                : "border-gray-300 dark:border-gray-700"
-            }`}
-            placeholder="teniskazelena"
-          />
-          {handleError ? (
-            <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-              {handleError}
-            </p>
-          ) : (
-            <FieldHint example="kartichka-za-mama → /product/kartichka-za-mama">
-              Адресът на продукта в URL. Само латински букви, цифри и тирета —
-              без интервали и кирилица. Ако е празно, се генерира от името.
-              Добре е да съдържа ключова дума (напр. продукт + повод).
-            </FieldHint>
-          )}
-        </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Име *
@@ -316,6 +291,33 @@ export function ProductForm({ product, collections }: ProductFormProps) {
             onChange={handleTitleChange}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            URL Slug
+          </label>
+          <input
+            type="text"
+            value={formData.handle}
+            onChange={handleHandleChange}
+            className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
+              handleError 
+                ? "border-red-500 dark:border-red-500" 
+                : "border-gray-300 dark:border-gray-700"
+            }`}
+            placeholder="kartichka-za-mama"
+          />
+          {handleError ? (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+              {handleError}
+            </p>
+          ) : (
+            <FieldHint example="kartichka-za-mama → /product/kartichka-za-mama">
+              Адресът на продукта в URL. Само латински букви, цифри и тирета.
+              Ако е празно, се генерира автоматично от името.
+            </FieldHint>
+          )}
         </div>
       </div>
 
@@ -505,41 +507,61 @@ export function ProductForm({ product, collections }: ProductFormProps) {
         })}
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:gap-8">
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="available"
-            checked={formData.available}
-            onChange={(e) =>
-              setFormData({ ...formData, available: e.target.checked })
-            }
-            className="mr-2"
-          />
-          <label
-            htmlFor="available"
-            className="text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Продуктът е достъпен
-          </label>
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Видимост за клиентите
+          </span>
+          <VisibilityStatusBadge active={formData.available} />
         </div>
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="plantable"
-            checked={formData.plantable}
-            onChange={(e) =>
-              setFormData({ ...formData, plantable: e.target.checked })
-            }
-            className="mr-2"
-          />
-          <label
-            htmlFor="plantable"
-            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => setFormData({ ...formData, available: true })}
+            className={`flex-1 rounded-md border px-4 py-3 text-left text-sm transition-colors ${
+              formData.available
+                ? "border-green-500 bg-green-50 text-green-900 dark:border-green-600 dark:bg-green-950/30 dark:text-green-100"
+                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+            }`}
           >
-            Може да се засади (показва таб „Как се засажда“)
-          </label>
+            <span className="font-medium">🟢 Активен</span>
+            <span className="mt-0.5 block text-xs opacity-80">
+              Видим в каталога и може да се поръчва
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFormData({ ...formData, available: false })}
+            className={`flex-1 rounded-md border px-4 py-3 text-left text-sm transition-colors ${
+              !formData.available
+                ? "border-gray-400 bg-gray-100 text-gray-900 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100"
+                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+            }`}
+          >
+            <span className="font-medium">⚪ Неактивен</span>
+            <span className="mt-0.5 block text-xs opacity-80">
+              Скрит от клиентите
+            </span>
+          </button>
         </div>
+      </div>
+
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          id="plantable"
+          checked={formData.plantable}
+          onChange={(e) =>
+            setFormData({ ...formData, plantable: e.target.checked })
+          }
+          className="mr-2"
+        />
+        <label
+          htmlFor="plantable"
+          className="text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Може да се засади (показва таб „Как се засажда“)
+        </label>
       </div>
 
       <div className="flex gap-4">
