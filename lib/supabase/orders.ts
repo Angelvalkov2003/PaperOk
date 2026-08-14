@@ -1,5 +1,8 @@
 import { createServiceClient } from "./service";
 import { sendNewOrderNotification } from "lib/email";
+import type { OrderStatus, PaymentStatus } from "lib/order-status";
+
+export type { OrderStatus, PaymentStatus } from "lib/order-status";
 
 export interface CreateOrderData {
   customer_name: string;
@@ -28,14 +31,15 @@ export interface CreateOrderData {
   shipping_details?: Record<string, unknown>;
 }
 
-export type OrderStatus =
-  | "new"
-  | "pending_payment"
-  | "confirmed"
-  | "shipped"
-  | "paid"
-  | "completed"
-  | "canceled";
+function initialStatuses(paymentMethod: CreateOrderData["payment_method"]): {
+  status: OrderStatus;
+  payment_status: PaymentStatus;
+} {
+  if (paymentMethod === "card") {
+    return { status: "new", payment_status: "awaiting_payment" };
+  }
+  return { status: "processing", payment_status: "cash_on_delivery" };
+}
 
 /**
  * Create a new order. Returns existing order if idempotency_key matches.
@@ -63,8 +67,7 @@ export async function createOrder(data: CreateOrderData) {
     ...(product.variant_name ? { variant_name: product.variant_name } : {}),
   }));
 
-  const initialStatus =
-    data.payment_method === "card" ? "pending_payment" : "new";
+  const { status, payment_status } = initialStatuses(data.payment_method);
 
   const { data: order, error } = await supabase
     .from("orders")
@@ -77,7 +80,8 @@ export async function createOrder(data: CreateOrderData) {
       total_price: data.total_price,
       products_subtotal: data.products_subtotal ?? null,
       payment_method: data.payment_method,
-      status: initialStatus,
+      payment_status,
+      status,
       comment: data.comment || null,
       idempotency_key: data.idempotency_key || null,
       shipping_method: data.shipping_method || null,
@@ -170,22 +174,77 @@ export async function updateOrderStripeSession(
   return data;
 }
 
+async function sendOrderNotificationOnce(order: Record<string, unknown>) {
+  const supabase = createServiceClient();
+
+  if (order.email_sent_at) {
+    return;
+  }
+
+  const result = await sendNewOrderNotification({
+    orderId: String(order.id),
+    customerName: String(order.customer_name),
+    customerEmail: String(order.customer_email),
+    customerPhone: order.customer_phone
+      ? String(order.customer_phone)
+      : undefined,
+    customerAddress: String(order.customer_address),
+    totalPrice: Number(order.total_price),
+    productsSubtotal:
+      order.products_subtotal != null
+        ? Number(order.products_subtotal)
+        : undefined,
+    shippingPrice:
+      order.shipping_price != null ? Number(order.shipping_price) : undefined,
+    paymentMethod: order.payment_method as
+      | "cash_on_delivery"
+      | "card"
+      | "bank_transfer",
+    products: (order.products as any[]).map((p: any) => ({
+      id: p.id,
+      name: p.variant_name ? `${p.name} (${p.variant_name})` : p.name,
+      price: Number(p.price),
+      quantity: p.quantity,
+    })),
+    comment: order.comment ? String(order.comment) : undefined,
+  });
+
+  if (!result.success) {
+    console.warn(
+      "Order email skipped/failed (order still accepted):",
+      result.error,
+    );
+  }
+
+  await supabase
+    .from("orders")
+    .update({ email_sent_at: new Date().toISOString() })
+    .eq("id", order.id);
+}
+
 /**
- * Mark order as paid and send notification email exactly once.
+ * Stripe payment confirmed — mark paid and move order to fulfillment queue.
  */
 export async function fulfillPaidOrder(orderId: string) {
   const supabase = createServiceClient();
-
   const order = await getOrderById(orderId);
 
-  if (order.email_sent_at && order.status === "paid") {
+  if (order.payment_status === "paid" && order.status === "processing") {
+    if (!order.email_sent_at) {
+      await sendOrderNotificationOnce(order);
+    }
+    return order;
+  }
+
+  if (order.status === "canceled") {
     return order;
   }
 
   const { data: updated, error } = await supabase
     .from("orders")
     .update({
-      status: "paid",
+      payment_status: "paid",
+      status: order.status === "new" ? "processing" : order.status,
       updated_at: new Date().toISOString(),
     })
     .eq("id", orderId)
@@ -196,104 +255,63 @@ export async function fulfillPaidOrder(orderId: string) {
     throw new Error("Failed to update order status");
   }
 
-  if (!updated.email_sent_at) {
-    const result = await sendNewOrderNotification({
-      orderId: updated.id,
-      customerName: updated.customer_name,
-      customerEmail: updated.customer_email,
-      customerPhone: updated.customer_phone || undefined,
-      customerAddress: updated.customer_address,
-      totalPrice: Number(updated.total_price),
-      productsSubtotal:
-        updated.products_subtotal != null
-          ? Number(updated.products_subtotal)
-          : undefined,
-      shippingPrice:
-        updated.shipping_price != null
-          ? Number(updated.shipping_price)
-          : undefined,
-      paymentMethod: updated.payment_method as
-        | "cash_on_delivery"
-        | "card"
-        | "bank_transfer",
-      products: (updated.products as any[]).map((p: any) => ({
-        id: p.id,
-        name: p.variant_name ? `${p.name} (${p.variant_name})` : p.name,
-        price: Number(p.price),
-        quantity: p.quantity,
-      })),
-      comment: updated.comment || undefined,
-    });
+  await sendOrderNotificationOnce(updated);
+  return updated;
+}
 
-    if (!result.success) {
-      console.warn(
-        "Order email skipped/failed (order still fulfilled):",
-        result.error,
-      );
-    }
+/**
+ * Mark card payment as failed — order stays at "Нова".
+ */
+export async function markPaymentFailed(orderId: string) {
+  const supabase = createServiceClient();
+  const order = await getOrderById(orderId);
 
-    await supabase
-      .from("orders")
-      .update({ email_sent_at: new Date().toISOString() })
-      .eq("id", orderId);
+  if (order.payment_status === "paid") {
+    return order;
+  }
+
+  const { data: updated, error } = await supabase
+    .from("orders")
+    .update({
+      payment_status: "failed",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId)
+    .select()
+    .single();
+
+  if (error || !updated) {
+    throw new Error("Failed to update payment status");
   }
 
   return updated;
 }
 
 /**
- * Send notification for COD order exactly once.
+ * COD / bank transfer — notify admin and ensure fulfillment status.
  */
 export async function fulfillCodOrder(orderId: string) {
   const supabase = createServiceClient();
   const order = await getOrderById(orderId);
 
-  if (order.email_sent_at) {
-    return order;
+  let current = order;
+
+  if (order.status === "new") {
+    const { data: updated } = await supabase
+      .from("orders")
+      .update({
+        status: "processing",
+        payment_status: "cash_on_delivery",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", orderId)
+      .select()
+      .single();
+    if (updated) current = updated;
   }
 
-  const result = await sendNewOrderNotification({
-    orderId: order.id,
-    customerName: order.customer_name,
-    customerEmail: order.customer_email,
-    customerPhone: order.customer_phone || undefined,
-    customerAddress: order.customer_address,
-    totalPrice: Number(order.total_price),
-    productsSubtotal:
-      order.products_subtotal != null
-        ? Number(order.products_subtotal)
-        : undefined,
-    shippingPrice:
-      order.shipping_price != null ? Number(order.shipping_price) : undefined,
-    paymentMethod: (order.payment_method || "cash_on_delivery") as
-      | "cash_on_delivery"
-      | "card"
-      | "bank_transfer",
-    products: (order.products as any[]).map((p: any) => ({
-      id: p.id,
-      name: p.variant_name ? `${p.name} (${p.variant_name})` : p.name,
-      price: Number(p.price),
-      quantity: p.quantity,
-    })),
-    comment: order.comment || undefined,
-  });
-
-  if (!result.success) {
-    console.warn(
-      "COD order email skipped/failed (order still accepted):",
-      result.error,
-    );
-  }
-
-  // Always mark so refresh does not keep retrying Resend
-  const { data } = await supabase
-    .from("orders")
-    .update({ email_sent_at: new Date().toISOString() })
-    .eq("id", orderId)
-    .select()
-    .single();
-
-  return data || order;
+  await sendOrderNotificationOnce(current);
+  return current;
 }
 
 export async function getAllOrders() {
@@ -363,4 +381,77 @@ export async function updateOrder(orderId: string, data: UpdateOrderData) {
   }
 
   return order;
+}
+
+export async function saveSpeedyShipment(
+  orderId: string,
+  data: {
+    speedy_shipment_id: string;
+    speedy_parcel_id: string;
+  },
+) {
+  const supabase = createServiceClient();
+  const now = new Date().toISOString();
+
+  const { data: order, error } = await supabase
+    .from("orders")
+    .update({
+      speedy_shipment_id: data.speedy_shipment_id,
+      speedy_parcel_id: data.speedy_parcel_id,
+      speedy_created_at: now,
+      updated_at: now,
+    })
+    .eq("id", orderId)
+    .select()
+    .single();
+
+  if (error || !order) {
+    throw new Error("Failed to save Speedy shipment");
+  }
+
+  return order;
+}
+
+export async function getOrdersForSpeedySync() {
+  const supabase = createServiceClient();
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .not("speedy_parcel_id", "is", null)
+    .in("status", ["processing", "shipped"])
+    .order("speedy_last_synced_at", { ascending: true, nullsFirst: true })
+    .limit(50);
+
+  if (error) {
+    throw new Error("Failed to fetch orders for Speedy sync");
+  }
+
+  return data || [];
+}
+
+export async function updateOrderFromSpeedyTrack(
+  orderId: string,
+  updates: {
+    status?: OrderStatus;
+    speedy_last_synced_at?: string;
+  },
+) {
+  const supabase = createServiceClient();
+
+  const { data, error } = await supabase
+    .from("orders")
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId)
+    .select()
+    .single();
+
+  if (error || !data) {
+    throw new Error("Failed to update order from Speedy track");
+  }
+
+  return data;
 }

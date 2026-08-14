@@ -6,6 +6,9 @@
 :root {
   --paper-bg: #F8F5EF;
   --paper-section: #EFE7DB;
+  --paper-surface: #D2C5B4;
+  --paper-surface-muted: #E0D5C6;
+  --paper-surface-dark: #C4B5A3;
   --paper-accent-bg: #DDE8CC;
   --paper-green: #5E7F3A;
   --paper-green-hover: #4E6B31;
@@ -14,6 +17,7 @@
   --paper-muted: #9A958C;
   --paper-white: #FFFFFF;
   --paper-border: #E5DDD0;
+  --paper-border-strong: #C9BAA8;
   --paper-shadow: 0 4px 24px rgba(74, 52, 40, 0.08);
   --paper-shadow-lg: 0 8px 32px rgba(74, 52, 40, 0.12);
 }
@@ -21,6 +25,9 @@
 @theme inline {
   --color-paper-bg: var(--paper-bg);
   --color-paper-section: var(--paper-section);
+  --color-paper-surface: var(--paper-surface);
+  --color-paper-surface-muted: var(--paper-surface-muted);
+  --color-paper-surface-dark: var(--paper-surface-dark);
   --color-paper-accent-bg: var(--paper-accent-bg);
   --color-paper-green: var(--paper-green);
   --color-paper-green-hover: var(--paper-green-hover);
@@ -29,6 +36,7 @@
   --color-paper-muted: var(--paper-muted);
   --color-paper-white: var(--paper-white);
   --color-paper-border: var(--paper-border);
+  --color-paper-border-strong: var(--paper-border-strong);
   --font-heading: var(--font-heading);
   --font-body: var(--font-body);
 }
@@ -181,7 +189,7 @@ button {
 
 .paper-dropdown-trigger:hover {
   border-color: color-mix(in srgb, var(--paper-green) 40%, var(--paper-border));
-  background-color: color-mix(in srgb, var(--paper-section) 60%, var(--paper-bg));
+  background-color: color-mix(in srgb, var(--paper-surface-muted) 65%, var(--paper-bg));
 }
 
 .paper-dropdown-trigger[aria-expanded="true"],

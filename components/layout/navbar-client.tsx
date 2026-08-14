@@ -1,14 +1,12 @@
 "use client";
 
 import CartModal from "components/cart/modal";
-import { PaperTexture } from "components/ui/paper-texture";
 import { SiteLogo } from "components/site-logo";
 import {
   buildCategoryTree,
   type CategoryNode,
   type FlatCategory,
 } from "lib/category-tree";
-import { PAPER_BACKGROUNDS, PAPER_OVERLAYS } from "lib/backgrounds";
 import { FIXED_MENU, MAIN_MENU_SECTIONS } from "lib/constants";
 import { ChevronDownIcon, ChevronRightIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
@@ -304,7 +302,7 @@ function SearchToggle() {
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Затвори търсене" : "Търсене"}
         aria-expanded={open}
-        className="flex h-10 w-10 items-center justify-center rounded-full text-paper-text transition-colors hover:bg-paper-section hover:text-paper-green"
+        className="flex h-10 w-10 items-center justify-center rounded-full text-paper-text transition-colors hover:bg-paper-surface-muted hover:text-paper-green"
       >
         <svg
           className="h-5 w-5"
@@ -324,7 +322,7 @@ function SearchToggle() {
       {rendered && (
         <div className="absolute inset-x-0 top-full z-50 overflow-hidden">
           <div
-            className={`border-b border-paper-border bg-paper-bg shadow-sm transition-[transform,opacity] duration-300 ease-out ${
+            className={`border-b border-paper-border-strong bg-paper-surface shadow-sm transition-[transform,opacity] duration-300 ease-out ${
               shown
                 ? "translate-y-0 opacity-100"
                 : "-translate-y-full opacity-0"
@@ -340,7 +338,7 @@ function SearchToggle() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Затвори търсене"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-paper-muted transition-colors hover:bg-paper-section hover:text-paper-heading"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-paper-muted transition-colors hover:bg-paper-surface-muted hover:text-paper-heading"
               >
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -356,7 +354,7 @@ function DesktopNav({ categories }: { categories: FlatCategory[] }) {
   const sectionByHandle = new Map(MAIN_MENU_SECTIONS.map((s) => [s.handle, s]));
 
   return (
-    <ul className="mt-2 hidden w-full items-center justify-center gap-x-5 overflow-visible border-t border-paper-border/35 pt-2.5 lg:flex xl:gap-x-8">
+    <ul className="mt-2 hidden w-full items-center justify-center gap-x-5 overflow-visible border-t border-paper-surface-dark/45 pt-2.5 lg:flex xl:gap-x-8">
       {FIXED_MENU.map((item) => {
         const handle = collectionFromPath(item.path);
         const section = handle
@@ -410,18 +408,7 @@ export function NavbarClient() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 overflow-visible border-b border-paper-border/50">
-      <div className="absolute inset-0 overflow-hidden">
-        <PaperTexture
-          src={PAPER_BACKGROUNDS.fibers}
-          overlay="rgba(236, 220, 196, 0.52)"
-          sizes="100vw"
-          quality={88}
-          priority
-          imageClassName="object-cover object-[center_45%] scale-110"
-        />
-        <div className="absolute inset-0 bg-[#E8D5B8]/30" />
-      </div>
+    <header className="sticky top-0 z-40 overflow-visible border-b border-paper-border-strong/70 bg-paper-surface">
       <nav className="relative z-10 mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8 lg:py-3">
         <div className="flex items-center justify-between gap-4">
           <Link

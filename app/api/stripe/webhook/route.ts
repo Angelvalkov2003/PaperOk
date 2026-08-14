@@ -3,7 +3,15 @@ import { constructStripeEvent } from "lib/stripe";
 import {
   fulfillPaidOrder,
   getOrderByStripeSessionId,
+  markPaymentFailed,
 } from "lib/supabase/orders";
+
+function orderIdFromSession(session: {
+  metadata?: { orderId?: string } | null;
+  id: string;
+}) {
+  return session.metadata?.orderId;
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -26,7 +34,7 @@ export async function POST(request: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    const orderId = session.metadata?.orderId;
+    const orderId = orderIdFromSession(session);
 
     if (!orderId) {
       console.error("Webhook: missing orderId in session metadata");
@@ -44,6 +52,19 @@ export async function POST(request: NextRequest) {
       await fulfillPaidOrder(targetOrderId);
     } catch (err) {
       console.error("Webhook fulfill error:", err);
+    }
+  }
+
+  if (event.type === "checkout.session.async_payment_failed") {
+    const session = event.data.object;
+    const orderId = orderIdFromSession(session);
+
+    if (orderId) {
+      try {
+        await markPaymentFailed(orderId);
+      } catch (err) {
+        console.error("Webhook payment failed error:", err);
+      }
     }
   }
 

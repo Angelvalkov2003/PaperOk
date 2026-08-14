@@ -3,9 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateOrderFields } from "app/admin/orders/[id]/actions";
+import {
+  ORDER_STATUSES,
+  orderStatusLabel,
+  paymentStatusLabel,
+  type OrderStatus,
+} from "lib/order-status";
 import { toast } from "sonner";
-
-type OrderStatus = "new" | "pending_payment" | "confirmed" | "shipped" | "paid" | "completed" | "canceled";
 
 interface OrderEditFormProps {
   order: {
@@ -16,6 +20,7 @@ interface OrderEditFormProps {
     customer_address: string;
     total_price: number;
     payment_method: "cash_on_delivery" | "card" | "bank_transfer";
+    payment_status?: string;
     status: string;
     comment?: string;
     created_at: string;
@@ -25,7 +30,7 @@ interface OrderEditFormProps {
 export function OrderEditForm({ order }: OrderEditFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  // Format date for datetime-local input (YYYY-MM-DDTHH:mm)
+
   const formatDateForInput = (dateString: string) => {
     const date = new Date(dateString);
     const year = date.getFullYear();
@@ -207,11 +212,25 @@ export function OrderEditForm({ order }: OrderEditFormProps) {
       </div>
 
       <div>
+        <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Статус на плащането
+        </span>
+        <p className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200">
+          {paymentStatusLabel(order.payment_status)}
+        </p>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {order.payment_method === "card"
+            ? "Актуализира се автоматично от Stripe."
+            : "При наложен платеж клиентът плаща при получаване."}
+        </p>
+      </div>
+
+      <div>
         <label
           htmlFor="status"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
         >
-          Статус *
+          Статус на поръчката *
         </label>
         <select
           id="status"
@@ -223,13 +242,11 @@ export function OrderEditForm({ order }: OrderEditFormProps) {
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
           disabled={loading}
         >
-          <option value="new">Нова</option>
-          <option value="pending_payment">Очаква плащане</option>
-          <option value="confirmed">Потвърждение с клиент</option>
-          <option value="shipped">Изпратена пратка</option>
-          <option value="paid">Платена пратка</option>
-          <option value="completed">Финализирано</option>
-          <option value="canceled">Отменена</option>
+          {ORDER_STATUSES.map((value) => (
+            <option key={value} value={value}>
+              {orderStatusLabel(value)}
+            </option>
+          ))}
         </select>
       </div>
 

@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { getOrderById, fulfillCodOrder, fulfillPaidOrder } from "lib/supabase/orders";
 import { getSession, isStripeEnabled } from "lib/stripe";
+import {
+  orderStatusLabel,
+  paymentStatusLabel,
+} from "lib/order-status";
 import { ClearCartOnSuccess } from "components/cart/clear-cart-on-success";
 
 export default async function CheckoutSuccessPage({
@@ -24,9 +28,8 @@ export default async function CheckoutSuccessPage({
       ) {
         order = await fulfillCodOrder(orderId);
       } else if (order.payment_method === "card" && isStripeEnabled()) {
-        // Verify payment via Stripe API (no webhook needed)
         const stripeSessionId = order.stripe_session_id || sessionId;
-        if (order.status !== "paid" && stripeSessionId) {
+        if (order.payment_status !== "paid" && stripeSessionId) {
           try {
             const session = await getSession(stripeSessionId);
             if (session.payment_status === "paid") {
@@ -42,11 +45,13 @@ export default async function CheckoutSuccessPage({
     }
   }
 
-  const isPaid =
-    order?.status === "paid" ||
-    order?.status === "completed" ||
-    order?.payment_method === "cash_on_delivery" ||
-    order?.payment_method === "bank_transfer";
+  const isAccepted =
+    order?.payment_status === "paid" ||
+    order?.payment_status === "cash_on_delivery";
+
+  const isAwaitingCard =
+    order?.payment_method === "card" &&
+    order?.payment_status === "awaiting_payment";
 
   return (
     <>
@@ -56,14 +61,14 @@ export default async function CheckoutSuccessPage({
           <div className="mb-6">
             <div
               className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${
-                isPaid
+                isAccepted
                   ? "bg-paper-accent-bg"
                   : "bg-yellow-100"
               }`}
             >
               <svg
                 className={`h-8 w-8 ${
-                  isPaid
+                  isAccepted
                     ? "text-paper-green"
                     : "text-yellow-600"
                 }`}
@@ -81,7 +86,7 @@ export default async function CheckoutSuccessPage({
             </div>
           </div>
           <h1 className="mb-4 text-3xl font-bold text-paper-heading">
-            {order?.payment_method === "card" && order?.status === "pending_payment"
+            {isAwaitingCard
               ? "Плащането се обработва..."
               : "Поръчката е приета!"}
           </h1>
@@ -110,14 +115,12 @@ export default async function CheckoutSuccessPage({
                 </p>
               ) : null}
               <p className="text-sm text-paper-text mb-2">
-                <strong>Статус:</strong>{" "}
-                {order.status === "paid"
-                  ? "Платена"
-                  : order.status === "pending_payment"
-                    ? "Очаква плащане"
-                    : order.status === "new"
-                      ? "Нова"
-                      : order.status}
+                <strong>Статус на поръчката:</strong>{" "}
+                {orderStatusLabel(order.status)}
+              </p>
+              <p className="text-sm text-paper-text mb-2">
+                <strong>Статус на плащането:</strong>{" "}
+                {paymentStatusLabel(order.payment_status)}
               </p>
               {order.payment_method === "cash_on_delivery" && (
                 <p className="text-sm text-paper-text">

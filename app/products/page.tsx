@@ -2,6 +2,7 @@ import Footer from "components/layout/footer";
 import Grid from "components/grid";
 import ProductGridItems from "components/layout/product-grid-items";
 import { Breadcrumb } from "components/products/breadcrumb";
+import { CategoryDescription } from "components/products/category-description";
 import { CategoryMobileNav } from "components/products/category-mobile-nav";
 import { CategoryTreeSidebar } from "components/products/category-tree-sidebar";
 import { FilterButton } from "components/products/filter-button";
@@ -129,9 +130,7 @@ export default async function ProductsPage({
               {currentCollection?.title || "Всички продукти"}
             </h1>
             {currentCollection?.description && (
-              <p className="mt-2 text-base text-paper-text sm:mt-3 sm:text-lg">
-                {currentCollection.description}
-              </p>
+              <CategoryDescription text={currentCollection.description} />
             )}
             {products.length > 0 && (
               <p className="mt-2 text-sm text-paper-muted sm:mt-3 sm:text-base">

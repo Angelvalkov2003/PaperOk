@@ -107,10 +107,13 @@ CREATE TABLE orders (
     products_subtotal NUMERIC(10, 2),
     payment_method    VARCHAR(20) NOT NULL DEFAULT 'cash_on_delivery'
                           CHECK (payment_method IN ('cash_on_delivery', 'card', 'bank_transfer')),
+    payment_status    VARCHAR(30) NOT NULL DEFAULT 'cash_on_delivery'
+                          CHECK (payment_status IN (
+                              'cash_on_delivery', 'awaiting_payment', 'paid', 'failed'
+                          )),
     status            VARCHAR(20) NOT NULL DEFAULT 'new'
                           CHECK (status IN (
-                              'new', 'pending_payment', 'confirmed',
-                              'shipped', 'paid', 'completed', 'canceled'
+                              'new', 'processing', 'shipped', 'delivered', 'canceled'
                           )),
     comment           TEXT,
     shipping_method      TEXT CHECK (
@@ -126,14 +129,21 @@ CREATE TABLE orders (
     stripe_session_id TEXT,
     idempotency_key   TEXT,
     email_sent_at     TIMESTAMPTZ,
+    speedy_shipment_id   TEXT,
+    speedy_parcel_id     TEXT,
+    speedy_created_at    TIMESTAMPTZ,
+    speedy_last_synced_at TIMESTAMPTZ,
     created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX        idx_orders_status         ON orders(status);
+CREATE INDEX        idx_orders_payment_status ON orders(payment_status);
 CREATE INDEX        idx_orders_created_at     ON orders(created_at DESC);
 CREATE INDEX        idx_orders_updated_at     ON orders(updated_at DESC);
 CREATE INDEX        idx_orders_customer_email ON orders(customer_email);
+CREATE INDEX        idx_orders_speedy_parcel ON orders(speedy_parcel_id)
+    WHERE speedy_parcel_id IS NOT NULL;
 CREATE UNIQUE INDEX idx_orders_stripe_session_id
     ON orders(stripe_session_id) WHERE stripe_session_id IS NOT NULL;
 CREATE UNIQUE INDEX idx_orders_idempotency_key
@@ -144,11 +154,16 @@ COMMENT ON COLUMN orders.products          IS 'Snapshot: [{id, name, price, quan
 COMMENT ON COLUMN orders.stripe_session_id IS 'Stripe Checkout Session ID — one per payment.';
 COMMENT ON COLUMN orders.idempotency_key   IS 'Client UUID — prevents duplicate orders on double-submit.';
 COMMENT ON COLUMN orders.email_sent_at     IS 'When admin notification was sent — prevents duplicate emails.';
-COMMENT ON COLUMN orders.status            IS 'new | pending_payment | confirmed | shipped | paid | completed | canceled';
+COMMENT ON COLUMN orders.status            IS 'new | processing | shipped | delivered | canceled';
+COMMENT ON COLUMN orders.payment_status    IS 'cash_on_delivery | awaiting_payment | paid | failed';
 COMMENT ON COLUMN orders.shipping_method   IS 'office | apt | address (Speedy)';
 COMMENT ON COLUMN orders.shipping_price    IS 'Shipping cost from Speedy calculate (EUR, incl. VAT)';
 COMMENT ON COLUMN orders.products_subtotal IS 'Products total before shipping';
 COMMENT ON COLUMN orders.shipping_details  IS 'Extra Speedy/address payload for admin';
+COMMENT ON COLUMN orders.speedy_shipment_id   IS 'Speedy shipment id from /shipment/';
+COMMENT ON COLUMN orders.speedy_parcel_id     IS 'Primary parcel id — waybill number for print/track';
+COMMENT ON COLUMN orders.speedy_created_at   IS 'When the Speedy waybill was created from admin';
+COMMENT ON COLUMN orders.speedy_last_synced_at IS 'Last Speedy track sync (cron)';
 
 -- =============================================================================
 -- 5. BLOG POSTS

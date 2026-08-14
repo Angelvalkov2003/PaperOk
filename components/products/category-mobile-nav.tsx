@@ -25,7 +25,7 @@ export function CategoryMobileNav({
         type="button"
         onClick={() => setTreeOpen((open) => !open)}
         aria-expanded={treeOpen}
-        className="flex w-full items-center justify-between rounded-xl border border-paper-border bg-paper-white/70 px-4 py-3 text-left text-sm font-medium text-paper-heading transition-colors hover:border-paper-green/40"
+        className="flex w-full items-center justify-between rounded-xl border border-paper-border-strong/70 bg-paper-surface-muted/50 px-4 py-3 text-left text-sm font-medium text-paper-heading transition-colors hover:border-paper-green/40"
       >
         <span>{label}</span>
         <ChevronDownIcon
@@ -37,7 +37,7 @@ export function CategoryMobileNav({
       </button>
 
       {treeOpen && (
-        <div className="mt-2 rounded-xl border border-paper-border bg-paper-white/85 p-3 shadow-sm">
+        <div className="mt-2 rounded-xl border border-paper-border-strong/70 bg-paper-surface-muted/40 p-3 shadow-sm">
           <CategoryTreeSidebar tree={tree} currentHandle={currentHandle} />
         </div>
       )}

@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (order.status === "paid" || order.status === "completed") {
+    if (order.payment_status === "paid") {
       return NextResponse.json(
         { error: "Поръчката вече е платена" },
         { status: 400 },

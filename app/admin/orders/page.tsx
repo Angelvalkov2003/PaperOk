@@ -1,4 +1,11 @@
 import { getAllOrders } from "lib/supabase/orders";
+import {
+  orderStatusBadgeClass,
+  orderStatusLabel,
+  paymentMethodLabel,
+  paymentStatusBadgeClass,
+  paymentStatusLabel,
+} from "lib/order-status";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +46,10 @@ export default async function AdminOrdersPage() {
                   Плащане
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Статус
+                  Статус плащане
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Статус поръчка
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Дата
@@ -53,7 +63,7 @@ export default async function AdminOrdersPage() {
               {orders.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-6 py-4 text-center text-gray-500 dark:text-gray-400"
                   >
                     Няма поръчки
@@ -66,7 +76,7 @@ export default async function AdminOrdersPage() {
                     : [];
                   const totalItems = products.reduce(
                     (sum: number, p: any) => sum + (p.quantity || 0),
-                    0
+                    0,
                   );
 
                   return (
@@ -99,39 +109,20 @@ export default async function AdminOrdersPage() {
                         €{Number(order.total_price).toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {order.payment_method === "cash_on_delivery"
-                          ? "Наложен платеж"
-                          : order.payment_method === "bank_transfer"
-                            ? "Банков превод"
-                            : "Карта"}
+                        {paymentMethodLabel(order.payment_method)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            order.status === "new"
-                              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                              : order.status === "confirmed"
-                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                              : order.status === "shipped"
-                              ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
-                              : order.status === "paid"
-                              ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
-                              : order.status === "completed"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                          }`}
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${paymentStatusBadgeClass(order.payment_status)}`}
                         >
-                          {order.status === "new"
-                            ? "Нова"
-                            : order.status === "confirmed"
-                            ? "Потвърждение"
-                            : order.status === "shipped"
-                            ? "Изпратена"
-                            : order.status === "paid"
-                            ? "Платена"
-                            : order.status === "completed"
-                            ? "Финализирано"
-                            : "Отменена"}
+                          {paymentStatusLabel(order.payment_status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${orderStatusBadgeClass(order.status)}`}
+                        >
+                          {orderStatusLabel(order.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">

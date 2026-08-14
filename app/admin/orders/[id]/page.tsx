@@ -1,5 +1,14 @@
-import { getOrderById, updateOrderStatus } from "lib/supabase/orders";
+import { getOrderById } from "lib/supabase/orders";
 import { getProductByIdForAdmin } from "lib/supabase/admin-products";
+import {
+  orderStatusBadgeClass,
+  orderStatusLabel,
+  paymentMethodLabel,
+  paymentStatusBadgeClass,
+  paymentStatusLabel,
+} from "lib/order-status";
+import { getSpeedyShipmentEligibility } from "lib/speedy-order";
+import { SpeedyShipmentPanel } from "components/admin/speedy-shipment-panel";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { OrderEditForm } from "components/admin/order-edit-form";
@@ -39,6 +48,7 @@ export default async function OrderDetailPage({
   }
 
   const products = Array.isArray(order.products) ? order.products : [];
+  const shipmentEligibility = getSpeedyShipmentEligibility(order);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -88,6 +98,15 @@ export default async function OrderDetailPage({
         </h2>
         <OrderEditForm order={order} />
       </div>
+
+      <SpeedyShipmentPanel
+        orderId={order.id}
+        eligibility={shipmentEligibility}
+        shipmentId={order.speedy_shipment_id}
+        parcelId={order.speedy_parcel_id}
+        createdAt={order.speedy_created_at}
+        orderStatus={order.status}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Customer Information (Read-only view) */}
@@ -153,6 +172,11 @@ export default async function OrderDetailPage({
                   {order.shipping_office_name ? (
                     <p>Офис/автомат: {order.shipping_office_name}</p>
                   ) : null}
+                  {order.shipping_office_id ? (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Speedy ID: {order.shipping_office_id}
+                    </p>
+                  ) : null}
                   {order.shipping_details?.addressLine ? (
                     <p>Адрес: {String(order.shipping_details.addressLine)}</p>
                   ) : null}
@@ -170,11 +194,19 @@ export default async function OrderDetailPage({
                 Начин на плащане:
               </span>
               <p className="text-gray-900 dark:text-white">
-                {order.payment_method === "cash_on_delivery"
-                  ? "Наложен платеж"
-                  : order.payment_method === "bank_transfer"
-                    ? "Банков превод"
-                    : "Плащане с карта"}
+                {paymentMethodLabel(order.payment_method)}
+              </p>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Статус на плащането:
+              </span>
+              <p className="mt-1">
+                <span
+                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${paymentStatusBadgeClass(order.payment_status)}`}
+                >
+                  {paymentStatusLabel(order.payment_status)}
+                </span>
               </p>
             </div>
           </div>
@@ -187,33 +219,13 @@ export default async function OrderDetailPage({
           </h2>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400">Статус:</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Статус на поръчката:
+              </span>
               <span
-                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                  order.status === "new"
-                    ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                    : order.status === "confirmed"
-                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                    : order.status === "shipped"
-                    ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
-                    : order.status === "paid"
-                    ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
-                    : order.status === "completed"
-                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                    : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                }`}
+                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${orderStatusBadgeClass(order.status)}`}
               >
-                {order.status === "new"
-                  ? "Нова"
-                  : order.status === "confirmed"
-                  ? "Потвърждение с клиент"
-                  : order.status === "shipped"
-                  ? "Изпратена пратка"
-                  : order.status === "paid"
-                  ? "Платена пратка"
-                  : order.status === "completed"
-                  ? "Финализирано"
-                  : "Отменена"}
+                {orderStatusLabel(order.status)}
               </span>
             </div>
             <div className="flex justify-between">

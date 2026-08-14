@@ -10,8 +10,6 @@ import {
   TIKTOK_URL,
   YOUTUBE_URL,
 } from "lib/constants";
-import { PAPER_BACKGROUNDS, PAPER_OVERLAYS } from "lib/backgrounds";
-import { PaperTexture } from "components/ui/paper-texture";
 import { SiteLogo } from "components/site-logo";
 
 const contactPhone =
@@ -73,13 +71,7 @@ export default function Footer() {
 
   return (
 
-    <footer className="animate-fade-in relative z-0 overflow-hidden border-t border-paper-border bg-paper-section text-sm text-paper-text">
-      <PaperTexture
-        src={PAPER_BACKGROUNDS.plain}
-        overlay={PAPER_OVERLAYS.section}
-        sizes="100vw"
-        quality={80}
-      />
+    <footer className="animate-fade-in relative z-0 overflow-hidden border-t border-paper-border-strong/70 bg-paper-surface text-sm text-paper-text">
       <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-10 px-6 py-14 sm:px-6 lg:grid-cols-4 lg:px-8">
 
         {/* Brand */}

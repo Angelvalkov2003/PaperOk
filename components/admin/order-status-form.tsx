@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateOrderStatus } from "app/admin/orders/[id]/actions";
+import {
+  ORDER_STATUSES,
+  orderStatusLabel,
+  type OrderStatus,
+} from "lib/order-status";
 import { toast } from "sonner";
-
-type OrderStatus = "new" | "pending_payment" | "confirmed" | "shipped" | "paid" | "completed" | "canceled";
 
 export function OrderStatusForm({
   orderId,
@@ -16,7 +19,7 @@ export function OrderStatusForm({
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<OrderStatus>(
-    currentStatus as OrderStatus
+    currentStatus as OrderStatus,
   );
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +46,7 @@ export function OrderStatusForm({
         htmlFor="status"
         className="block text-sm font-medium text-gray-700 dark:text-gray-300"
       >
-        Промени статус:
+        Промени статус на поръчката:
       </label>
       <select
         id="status"
@@ -52,13 +55,11 @@ export function OrderStatusForm({
         className="block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white text-sm"
         disabled={loading}
       >
-        <option value="new">Нова</option>
-        <option value="pending_payment">Очаква плащане</option>
-        <option value="confirmed">Потвърждение с клиент</option>
-        <option value="shipped">Изпратена пратка</option>
-        <option value="paid">Платена пратка</option>
-        <option value="completed">Финализирано</option>
-        <option value="canceled">Отменена</option>
+        {ORDER_STATUSES.map((value) => (
+          <option key={value} value={value}>
+            {orderStatusLabel(value)}
+          </option>
+        ))}
       </select>
       <button
         type="submit"

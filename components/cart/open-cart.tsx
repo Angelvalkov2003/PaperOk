@@ -15,7 +15,7 @@ export default function OpenCart({
   return (
     <div
       className={clsx(
-        "relative flex h-10 w-10 items-center justify-center rounded-full text-paper-text transition-colors hover:bg-paper-section hover:text-paper-green",
+        "relative flex h-10 w-10 items-center justify-center rounded-full text-paper-text transition-colors hover:bg-paper-surface-muted hover:text-paper-green",
         bump && "animate-cart-bump",
       )}
     >

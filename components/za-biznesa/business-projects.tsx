@@ -62,10 +62,11 @@ const projects = [
     ],
   },
   {
-    title: "Корпоративни картички за Kerana Official",
+    title: "Корпоративни материали за Kirana Official",
     description:
-      "100 персонализирани картички от семенна хартия, размер 100 × 143 мм.",
+      "300 персонализирани картички от семенна хартия – размер 100 × 143 мм\n100 визитки от семенна хартия – размер 90 × 50 мм",
     images: [
+      "/projects/karana/IMG_0204.JPG",
       "/projects/karana/IMG_0200.JPG",
       "/projects/karana/IMG_0202.JPG",
     ],
@@ -78,15 +79,6 @@ const projects = [
       "/projects/ourplacezornitsa/IMG_0205.JPG",
       "/projects/ourplacezornitsa/IMG_0207.JPG",
       "/projects/ourplacezornitsa/IMG_0209.JPG",
-    ],
-  },
-  {
-    title: "Корпоративни материали за Kerana Official",
-    description:
-      "300 персонализирани картички от семенна хартия, размер 100 × 143 мм, и 100 визитки, размер 90 × 50 мм.",
-    images: [
-      "/projects/karana/IMG_0204.JPG",
-      "/projects/karana/IMG_0202.JPG",
     ],
   },
 ];
@@ -192,7 +184,7 @@ export function BusinessProjects() {
                   <BusinessCardTitle lines={3} className="text-paper-heading">
                     {project.title}
                   </BusinessCardTitle>
-                  <BusinessCardText className="min-h-[4.5rem]">
+                  <BusinessCardText className="min-h-[4.5rem] whitespace-pre-line">
                     {project.description}
                   </BusinessCardText>
                 </BusinessCard>

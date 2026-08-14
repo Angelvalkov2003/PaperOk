@@ -31,6 +31,7 @@ export function paperBgAt(index: number): string {
 export const PAPER_OVERLAYS = {
   hero: "rgba(248, 245, 239, 0.72)",
   cream: "rgba(248, 245, 239, 0.78)",
+  surface: "rgba(210, 197, 180, 0.88)",
   section: "rgba(239, 231, 219, 0.76)",
   accent: "rgba(221, 232, 204, 0.74)",
   card: "rgba(255, 255, 255, 0.72)",

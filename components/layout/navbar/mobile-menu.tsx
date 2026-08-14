@@ -7,7 +7,6 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { SiteLogo } from "components/site-logo";
-import { PaperTexture } from "components/ui/paper-texture";
 import {
   buildCategoryTree,
   type CategoryNode,
@@ -21,7 +20,6 @@ import {
   TIKTOK_URL,
   type MenuItem,
 } from "lib/constants";
-import { PAPER_BACKGROUNDS } from "lib/backgrounds";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Fragment, Suspense, useEffect, useState } from "react";
@@ -42,7 +40,7 @@ function SocialIcon({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
-      className="flex h-11 w-11 items-center justify-center rounded-full border border-paper-border/80 bg-paper-white/50 text-paper-heading transition-colors hover:border-paper-green hover:text-paper-green"
+      className="flex h-11 w-11 items-center justify-center rounded-full border border-paper-border-strong/80 bg-paper-surface-muted/60 text-paper-heading transition-colors hover:border-paper-green hover:text-paper-green"
     >
       {children}
     </a>
@@ -93,8 +91,8 @@ function MobileTreeNode({
           onClick={onNavigate}
           className={`block rounded-xl px-3 py-3.5 text-[17px] font-medium tracking-wide transition-colors ${
             isActive
-              ? "bg-paper-white/50 text-paper-green"
-              : "text-paper-text hover:bg-paper-white/40 hover:text-paper-green"
+              ? "bg-paper-surface-muted text-paper-green"
+              : "text-paper-text hover:bg-paper-surface-muted/70 hover:text-paper-green"
           }`}
         >
           {node.title}
@@ -107,7 +105,7 @@ function MobileTreeNode({
     <li>
       <div
         className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 ${
-          expanded || isActive ? "bg-paper-white/55" : ""
+          expanded || isActive ? "bg-paper-surface-muted/80" : ""
         }`}
       >
         <Link
@@ -192,8 +190,8 @@ function MobileMenuItem({
         onClick={() => setExpanded((v) => !v)}
         className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3.5 text-left text-[17px] font-medium tracking-wide transition-colors ${
           isActive || expanded
-            ? "bg-paper-white/55 text-paper-green"
-            : "text-paper-heading hover:bg-paper-white/40 hover:text-paper-green"
+            ? "bg-paper-surface-muted text-paper-green"
+            : "text-paper-heading hover:bg-paper-surface-muted/70 hover:text-paper-green"
         }`}
       >
         <span>{item.title}</span>
@@ -211,8 +209,8 @@ function MobileMenuItem({
               onClick={onNavigate}
               className={`block rounded-lg px-2 py-2.5 text-[15px] font-medium transition-colors ${
                 current === handle
-                  ? "bg-paper-white/50 text-paper-green"
-                  : "text-paper-heading hover:bg-paper-white/40 hover:text-paper-green"
+                  ? "bg-paper-surface-muted text-paper-green"
+                  : "text-paper-heading hover:bg-paper-surface-muted/70 hover:text-paper-green"
               }`}
             >
               {seeAllLabel}
@@ -266,7 +264,7 @@ export default function MobileMenu({
         type="button"
         onClick={openMobileMenu}
         aria-label="Отвори меню"
-        className="flex h-10 w-10 items-center justify-center rounded-full text-paper-text transition-colors hover:bg-paper-section/70 hover:text-paper-green lg:hidden"
+        className="flex h-10 w-10 items-center justify-center rounded-full text-paper-text transition-colors hover:bg-paper-surface-muted hover:text-paper-green lg:hidden"
       >
         <Bars3Icon className="h-5 w-5" />
       </button>
@@ -294,24 +292,13 @@ export default function MobileMenu({
             leaveFrom="translate-x-0"
             leaveTo="translate-x-full"
           >
-            <Dialog.Panel className="fixed inset-y-0 right-0 flex h-full w-full max-w-sm flex-col overflow-hidden shadow-xl">
-              <div className="absolute inset-0">
-                <PaperTexture
-                  src={PAPER_BACKGROUNDS.fibers}
-                  overlay="rgba(236, 220, 196, 0.52)"
-                  sizes="(max-width: 1024px) 100vw, 24rem"
-                  quality={85}
-                  imageClassName="object-cover object-[center_40%] scale-110"
-                />
-                <div className="absolute inset-0 bg-[#E8D5B8]/30" />
-              </div>
-
+            <Dialog.Panel className="fixed inset-y-0 right-0 flex h-full w-full max-w-sm flex-col overflow-hidden bg-paper-surface shadow-xl">
               <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
                 <div className="mb-6 flex items-center justify-between">
                   <SiteLogo height={36} />
                   <button
                     type="button"
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-paper-text transition-colors hover:bg-paper-white/50"
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-paper-text transition-colors hover:bg-paper-surface-muted"
                     onClick={closeMobileMenu}
                     aria-label="Затвори меню"
                   >
@@ -356,8 +343,8 @@ export default function MobileMenu({
                           onClick={closeMobileMenu}
                           className={`block rounded-xl px-3 py-3.5 text-[17px] font-medium tracking-wide transition-colors ${
                             isActive
-                              ? "bg-paper-white/55 text-paper-green"
-                              : "text-paper-heading hover:bg-paper-white/40 hover:text-paper-green"
+                              ? "bg-paper-surface-muted text-paper-green"
+                              : "text-paper-heading hover:bg-paper-surface-muted/70 hover:text-paper-green"
                           }`}
                         >
                           {item.title}
@@ -371,7 +358,7 @@ export default function MobileMenu({
                 </ul>
               </div>
 
-              <div className="relative z-10 mt-auto border-t border-paper-border/70 px-5 py-5">
+              <div className="relative z-10 mt-auto border-t border-paper-border-strong/70 px-5 py-5">
                 <p className="mb-3 text-xs font-medium uppercase tracking-wider text-paper-muted">
                   Последвай ни
                 </p>
