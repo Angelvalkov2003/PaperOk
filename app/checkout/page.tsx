@@ -4,7 +4,6 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "components/cart/cart-context";
 import Price from "components/price";
-import { createOrder } from "app/checkout/actions";
 import LoadingDots from "components/loading-dots";
 import { CARD_PAYMENTS_ENABLED } from "lib/constants";
 import { useErrorPopup } from "components/error-popup-provider";
@@ -140,7 +139,7 @@ export default function CheckoutPage() {
         return row;
       });
 
-      const orderPayload: Parameters<typeof createOrder>[0] = {
+      const orderPayload: Record<string, unknown> = {
         customer_name: formData.customer_name,
         customer_email: formData.customer_email,
         customer_phone: formData.customer_phone,
@@ -183,11 +182,24 @@ export default function CheckoutPage() {
         title: item.product.title,
       }));
 
-      const result = await createOrder(orderPayload, cartCheck);
+      const createRes = await fetch("/api/checkout/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order: orderPayload,
+          cartItems: cartCheck,
+        }),
+      });
 
-      if (!result.ok) {
-        throw new Error(result.error);
+      const createPayload = await createRes.json().catch(() => ({}));
+      if (!createRes.ok || !createPayload.id) {
+        throw new Error(
+          createPayload.error ||
+            `Грешка при създаване на поръчката (${createRes.status})`,
+        );
       }
+
+      const orderId = String(createPayload.id);
 
       if (formData.payment_method === "card") {
         if (!CARD_PAYMENTS_ENABLED) {
@@ -197,8 +209,22 @@ export default function CheckoutPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            orderId: result.id,
-            cart,
+            orderId,
+            cart: {
+              items: cart.items.map((item) => ({
+                productId: item.productId,
+                variantId: item.variantId,
+                quantity: item.quantity,
+                price: item.price,
+                product: {
+                  title: item.product.title,
+                  image: item.product.image?.url
+                    ? { url: item.product.image.url }
+                    : undefined,
+                },
+                variant: { title: item.variant.title },
+              })),
+            },
             shippingPrice: shipping.shippingPrice,
           }),
         });
@@ -217,7 +243,7 @@ export default function CheckoutPage() {
 
         throw new Error("Stripe не върна линк за плащане");
       } else {
-        router.push(`/checkout/success?orderId=${result.id}`);
+        router.push(`/checkout/success?orderId=${orderId}`);
       }
     } catch (err: unknown) {
       showError(err);
