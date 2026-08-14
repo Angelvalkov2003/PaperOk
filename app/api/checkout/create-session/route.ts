@@ -48,7 +48,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const validated = await validateCartPrices(cart.items);
+    const validated = await validateCartPrices(
+      cart.items.map((item: any) => ({
+        productId: item.productId,
+        variantId: item.variantId,
+        quantity: item.quantity,
+        price: item.price,
+        title: item.product?.title || item.title || "",
+      })),
+    );
     if (!validated.valid) {
       return NextResponse.json(
         { error: validated.error || "Невалидни цени в количката" },

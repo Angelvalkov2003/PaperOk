@@ -2,8 +2,9 @@
 
 import { createSpeedyShipmentAction } from "app/admin/orders/[id]/speedy-actions";
 import type { ShipmentEligibility } from "lib/speedy-order";
+import { useErrorPopup } from "components/error-popup-provider";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 
 type Props = {
   orderId: string;
@@ -23,22 +24,19 @@ export function SpeedyShipmentPanel({
   orderStatus,
 }: Props) {
   const router = useRouter();
+  const { showError } = useErrorPopup();
   const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
 
   const hasShipment = Boolean(parcelId || shipmentId);
   const labelUrl = `/api/admin/orders/${orderId}/speedy/label`;
 
   function handleCreate() {
-    setError(null);
     startTransition(async () => {
       try {
         await createSpeedyShipmentAction(orderId);
         router.refresh();
       } catch (err: unknown) {
-        setError(
-          err instanceof Error ? err.message : "Грешка при създаване на товарителница",
-        );
+        showError(err);
       }
     });
   }
@@ -115,10 +113,6 @@ export function SpeedyShipmentPanel({
           )}
         </div>
       )}
-
-      {error ? (
-        <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
-      ) : null}
     </div>
   );
 }

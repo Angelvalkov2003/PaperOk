@@ -16,6 +16,7 @@ import {
 } from "lib/constants";
 import { useState } from "react";
 import { EnvelopeIcon, PhoneIcon, MapPinIcon } from "@heroicons/react/24/outline";
+import { useErrorPopup } from "components/error-popup-provider";
 import {
   FieldError,
   FormField,
@@ -41,8 +42,8 @@ export default function ContactPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors<ContactFields>>(
     {},
   );
+  const { showError } = useErrorPopup();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const updateField = <K extends keyof typeof formData>(
@@ -60,7 +61,6 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
     const errors = validateContactForm(formData);
     setFieldErrors(errors);
@@ -98,11 +98,7 @@ export default function ContactPage() {
         privacy_policy_accepted: false,
       });
     } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Грешка при изпращане на съобщението",
-      );
+      showError(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -270,12 +266,6 @@ export default function ContactPage() {
               {success && (
                 <div className="mb-4 rounded-lg border border-paper-green bg-paper-accent-bg p-4 text-paper-heading">
                   Съобщението ви е изпратено успешно! Ще се свържем с вас скоро.
-                </div>
-              )}
-
-              {error && (
-                <div className="mb-4 rounded-lg border border-red-400 bg-red-50 p-4 text-red-800">
-                  {error}
                 </div>
               )}
 

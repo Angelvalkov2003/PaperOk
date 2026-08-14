@@ -7,6 +7,7 @@ import Price from "components/price";
 import { createOrder } from "app/checkout/actions";
 import LoadingDots from "components/loading-dots";
 import { CARD_PAYMENTS_ENABLED } from "lib/constants";
+import { useErrorPopup } from "components/error-popup-provider";
 import {
   SpeedyShippingForm,
   type SpeedyShippingSelection,
@@ -32,8 +33,8 @@ function generateIdempotencyKey() {
 export default function CheckoutPage() {
   const { cart } = useCart();
   const router = useRouter();
+  const { showError } = useErrorPopup();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors<CheckoutFields>>(
     {},
   );
@@ -104,7 +105,6 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
     const errors = validateCheckoutForm({
       customer_name: formData.customer_name,
@@ -121,43 +121,69 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
 
     try {
-      const products = cart.items.map((item) => ({
-        id: item.productId,
-        name: item.product.title,
-        price: item.price,
+      const products = cart.items.map((item) => {
+        const row: {
+          id: string;
+          name: string;
+          price: number;
+          quantity: number;
+          variant_name?: string;
+        } = {
+          id: item.productId,
+          name: item.product.title,
+          price: item.price,
+          quantity: item.quantity,
+        };
+        if (item.variant.title && item.variant.title !== item.product.title) {
+          row.variant_name = item.variant.title;
+        }
+        return row;
+      });
+
+      const orderPayload: Parameters<typeof createOrder>[0] = {
+        customer_name: formData.customer_name,
+        customer_email: formData.customer_email,
+        customer_phone: formData.customer_phone,
+        customer_address: shipping.customerAddressSummary,
+        products,
+        products_subtotal: productsSubtotal,
+        total_price: grandTotal,
+        payment_method: formData.payment_method,
+        idempotency_key: idempotencyKeyRef.current,
+        shipping_method: shipping.method,
+        shipping_price: shipping.shippingPrice,
+        shipping_site_id: shipping.siteId,
+        shipping_site_name: shipping.siteName,
+      };
+
+      if (formData.comment.trim()) {
+        orderPayload.comment = formData.comment.trim();
+      }
+      if (shipping.officeId != null) {
+        orderPayload.shipping_office_id = shipping.officeId;
+      }
+      if (shipping.officeName) {
+        orderPayload.shipping_office_name = shipping.officeName;
+      }
+      if (shipping.deliveryDeadline) {
+        orderPayload.shipping_deadline = shipping.deliveryDeadline;
+      }
+      if (shipping.addressLine || shipping.method) {
+        orderPayload.shipping_details = {
+          ...(shipping.addressLine ? { addressLine: shipping.addressLine } : {}),
+          method: shipping.method,
+        };
+      }
+
+      const cartCheck = cart.items.map((item) => ({
+        productId: item.productId,
+        variantId: item.variantId,
         quantity: item.quantity,
-        variant_name:
-          item.variant.title && item.variant.title !== item.product.title
-            ? item.variant.title
-            : undefined,
+        price: item.price,
+        title: item.product.title,
       }));
 
-      const result = await createOrder(
-        {
-          customer_name: formData.customer_name,
-          customer_email: formData.customer_email,
-          customer_phone: formData.customer_phone,
-          customer_address: shipping.customerAddressSummary,
-          products,
-          products_subtotal: productsSubtotal,
-          total_price: grandTotal,
-          payment_method: formData.payment_method,
-          comment: formData.comment || undefined,
-          idempotency_key: idempotencyKeyRef.current,
-          shipping_method: shipping.method,
-          shipping_price: shipping.shippingPrice,
-          shipping_site_id: shipping.siteId,
-          shipping_site_name: shipping.siteName,
-          shipping_office_id: shipping.officeId,
-          shipping_office_name: shipping.officeName,
-          shipping_deadline: shipping.deliveryDeadline,
-          shipping_details: {
-            addressLine: shipping.addressLine,
-            method: shipping.method,
-          },
-        },
-        cart.items,
-      );
+      const result = await createOrder(orderPayload, cartCheck);
 
       if (!result.ok) {
         throw new Error(result.error);
@@ -193,8 +219,8 @@ export default function CheckoutPage() {
       } else {
         router.push(`/checkout/success?orderId=${result.id}`);
       }
-    } catch (err: any) {
-      setError(err.message || "Грешка при създаване на поръчката");
+    } catch (err: unknown) {
+      showError(err);
       setIsSubmitting(false);
     }
   };
@@ -216,12 +242,6 @@ export default function CheckoutPage() {
               <h2 className="mb-6 text-xl font-semibold text-paper-heading">
                 Данни за поръчката
               </h2>
-
-              {error ? (
-                <div className="mb-4 rounded border border-red-400 bg-red-100 p-4 text-red-700">
-                  {error}
-                </div>
-              ) : null}
 
               <div className="space-y-4">
                 <FormField

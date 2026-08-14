@@ -9,7 +9,7 @@ import {
   isSpeedyConfigured,
 } from "lib/speedy";
 import type { CreateOrderData } from "lib/supabase/orders";
-import type { CartItem } from "lib/types";
+import type { CartPriceCheckItem } from "lib/supabase/validate-cart";
 import { isValidEmail, isValidPhone, VALIDATION_MESSAGES } from "lib/validation";
 
 export type CreateOrderResult =
@@ -18,7 +18,7 @@ export type CreateOrderResult =
 
 export async function createOrder(
   data: CreateOrderData,
-  cartItems?: CartItem[],
+  cartItems?: CartPriceCheckItem[],
 ): Promise<CreateOrderResult> {
   try {
     if (!data.customer_name?.trim()) {

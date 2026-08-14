@@ -3,6 +3,7 @@
 import { PaperTexture } from "components/ui/paper-texture";
 import { PAPER_BACKGROUNDS, PAPER_OVERLAYS } from "lib/backgrounds";
 import { useState } from "react";
+import { useErrorPopup } from "components/error-popup-provider";
 import {
   FieldError,
   FormField,
@@ -43,8 +44,8 @@ export function BusinessInquiryForm() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors<BusinessFields>>(
     {},
   );
+  const { showError } = useErrorPopup();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const updateField = <K extends keyof typeof formData>(
@@ -63,7 +64,6 @@ export function BusinessInquiryForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
     const errors = validateBusinessInquiryForm(formData);
     setFieldErrors(errors);
@@ -107,11 +107,7 @@ export function BusinessInquiryForm() {
         privacy_policy_accepted: false,
       });
     } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Грешка при изпращане на запитването",
-      );
+      showError(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -133,12 +129,6 @@ export function BusinessInquiryForm() {
         {success && (
           <div className="mb-4 rounded-lg border border-paper-green bg-paper-accent-bg p-4 text-paper-heading">
             Запитването ви е изпратено успешно! Ще се свържем с вас скоро.
-          </div>
-        )}
-
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-400 bg-red-50 p-4 text-red-800">
-            {error}
           </div>
         )}
 

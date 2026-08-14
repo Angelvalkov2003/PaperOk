@@ -1,6 +1,7 @@
 import { CartProvider } from "components/cart/cart-context";
 import { ConditionalNavbar } from "components/layout/conditional-navbar";
 import { CookieConsent } from "components/cookie-consent";
+import { ErrorPopupProvider } from "components/error-popup-provider";
 import {
   LOGO_WITH_BACKGROUND,
   LOGO_WITH_BACKGROUND_SIZE,
@@ -86,12 +87,14 @@ export default async function RootLayout({
         className={`${dmSans.className} bg-paper-bg text-paper-text antialiased selection:bg-paper-accent-bg selection:text-paper-heading`}
       >
         <CartProvider>
-          <ConditionalNavbar />
-          <main>
-            {children}
-            <Toaster closeButton />
-          </main>
-          <CookieConsent />
+          <ErrorPopupProvider>
+            <ConditionalNavbar />
+            <main>
+              {children}
+              <Toaster closeButton />
+            </main>
+            <CookieConsent />
+          </ErrorPopupProvider>
         </CartProvider>
       </body>
     </html>

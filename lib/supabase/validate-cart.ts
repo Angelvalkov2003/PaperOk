@@ -1,9 +1,16 @@
-import type { CartItem } from "lib/types";
 import { createServiceClient } from "./service";
 import type { ProductSizeVariant } from "lib/types";
 
+export type CartPriceCheckItem = {
+  productId: string;
+  variantId: string;
+  quantity: number;
+  price: number;
+  title: string;
+};
+
 export async function validateCartPrices(
-  items: CartItem[],
+  items: CartPriceCheckItem[],
 ): Promise<{ valid: boolean; error?: string; total?: number }> {
   const supabase = createServiceClient();
   let total = 0;
@@ -16,7 +23,7 @@ export async function validateCartPrices(
       .single();
 
     if (error || !product) {
-      return { valid: false, error: `Продуктът не е намерен: ${item.product.title}` };
+      return { valid: false, error: `Продуктът не е намерен: ${item.title}` };
     }
 
     if (!product.available) {

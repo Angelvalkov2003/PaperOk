@@ -85,6 +85,7 @@ export const FACEBOOK_URL =
 export const YOUTUBE_URL = "https://www.youtube.com/@paperok.official";
 export const TIKTOK_URL = "https://www.tiktok.com/@paperok.official";
 export const CONTACT_LOCATION = "София, България";
+export const SUPPORT_PHONE = "0877836667";
 
 /** Card checkout is shown only when the publishable Stripe key is set. */
 export const CARD_PAYMENTS_ENABLED = Boolean(
