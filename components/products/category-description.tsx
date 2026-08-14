@@ -2,28 +2,33 @@
 
 import { useState } from "react";
 import clsx from "clsx";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { Caveat } from "next/font/google";
+
+const script = Caveat({
+  subsets: ["latin", "cyrillic"],
+  weight: ["600"],
+  display: "swap",
+});
 
 export function CategoryDescription({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <div className="mt-3 lg:hidden">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="flex w-full items-center justify-between rounded-xl border border-paper-border-strong/70 bg-paper-surface-muted/50 px-4 py-3 text-left text-sm font-medium text-paper-heading transition-colors hover:border-paper-green/40"
-        >
-          <span>Описание</span>
-          <ChevronDownIcon
+      <div className="mt-1.5 lg:hidden">
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
             className={clsx(
-              "h-5 w-5 shrink-0 text-paper-muted transition-transform duration-200",
-              open && "rotate-180",
+              script.className,
+              "text-right text-[1.35rem] leading-none text-paper-green transition-colors hover:text-paper-green-hover",
             )}
-          />
-        </button>
+          >
+            Научи повече за категорията
+          </button>
+        </div>
         <div
           className={clsx(
             "grid transition-[grid-template-rows] duration-300 ease-out",
@@ -31,7 +36,7 @@ export function CategoryDescription({ text }: { text: string }) {
           )}
         >
           <div className="overflow-hidden">
-            <p className="mt-2 rounded-xl border border-paper-border-strong/60 bg-paper-surface-muted/35 px-4 py-3 text-sm leading-relaxed text-paper-text">
+            <p className="mt-2 text-base leading-relaxed text-paper-heading">
               {text}
             </p>
           </div>
