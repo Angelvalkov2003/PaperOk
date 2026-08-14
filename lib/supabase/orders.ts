@@ -106,7 +106,17 @@ export async function createOrder(data: CreateOrderData) {
       if (existing) return existing;
     }
     console.error("Error creating order:", error);
-    throw new Error("Failed to create order");
+    const details = error.message || error.code || "";
+    if (
+      details.includes("payment_status") ||
+      details.includes("orders_status_check") ||
+      details.includes("orders_payment_status")
+    ) {
+      throw new Error(
+        "Базата данни не е обновена за новите статуси. Изпълнете next_migration.sql в Supabase.",
+      );
+    }
+    throw new Error("Грешка при записване на поръчката. Моля, опитайте отново.");
   }
 
   if (!order) {

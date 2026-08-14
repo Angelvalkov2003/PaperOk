@@ -132,7 +132,7 @@ export default function CheckoutPage() {
             : undefined,
       }));
 
-      const order = await createOrder(
+      const result = await createOrder(
         {
           customer_name: formData.customer_name,
           customer_email: formData.customer_email,
@@ -159,6 +159,10 @@ export default function CheckoutPage() {
         cart.items,
       );
 
+      if (!result.ok) {
+        throw new Error(result.error);
+      }
+
       if (formData.payment_method === "card") {
         if (!CARD_PAYMENTS_ENABLED) {
           throw new Error("Плащането с карта не е налично");
@@ -167,23 +171,27 @@ export default function CheckoutPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            orderId: order.id,
+            orderId: result.id,
             cart,
             shippingPrice: shipping.shippingPrice,
           }),
         });
 
+        const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-          throw new Error("Грешка при създаване на сесия за плащане");
+          throw new Error(
+            payload.error || "Грешка при създаване на сесия за плащане",
+          );
         }
 
-        const { url } = await response.json();
-        if (url) {
-          window.location.href = url;
+        if (payload.url) {
+          window.location.href = payload.url;
           return;
         }
+
+        throw new Error("Stripe не върна линк за плащане");
       } else {
-        router.push(`/checkout/success?orderId=${order.id}`);
+        router.push(`/checkout/success?orderId=${result.id}`);
       }
     } catch (err: any) {
       setError(err.message || "Грешка при създаване на поръчката");

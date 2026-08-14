@@ -12,31 +12,35 @@ import type { CreateOrderData } from "lib/supabase/orders";
 import type { CartItem } from "lib/types";
 import { isValidEmail, isValidPhone, VALIDATION_MESSAGES } from "lib/validation";
 
+export type CreateOrderResult =
+  | { ok: true; id: string }
+  | { ok: false; error: string };
+
 export async function createOrder(
   data: CreateOrderData,
   cartItems?: CartItem[],
-) {
+): Promise<CreateOrderResult> {
   try {
     if (!data.customer_name?.trim()) {
-      throw new Error(VALIDATION_MESSAGES.required);
+      return { ok: false, error: VALIDATION_MESSAGES.required };
     }
     if (!isValidEmail(data.customer_email || "")) {
-      throw new Error(VALIDATION_MESSAGES.email);
+      return { ok: false, error: VALIDATION_MESSAGES.email };
     }
     if (!isValidPhone(data.customer_phone || "")) {
-      throw new Error(VALIDATION_MESSAGES.phone);
+      return { ok: false, error: VALIDATION_MESSAGES.phone };
     }
 
     if (data.payment_method === "card" && !isStripeEnabled()) {
-      throw new Error("Плащането с карта не е налично");
+      return { ok: false, error: "Плащането с карта не е налично. Липсва STRIPE_SECRET_KEY." };
     }
 
     if (!data.shipping_method || data.shipping_site_id == null) {
-      throw new Error("Моля, изберете начин на доставка със Speedy");
+      return { ok: false, error: "Моля, изберете начин на доставка със Speedy" };
     }
 
     if (!isSpeedyConfigured()) {
-      throw new Error("Доставката със Speedy временно не е налична");
+      return { ok: false, error: "Доставката със Speedy временно не е налична" };
     }
 
     let productsSubtotal = data.products_subtotal ?? 0;
@@ -44,7 +48,7 @@ export async function createOrder(
     if (cartItems && cartItems.length > 0) {
       const validation = await validateCartPrices(cartItems);
       if (!validation.valid) {
-        throw new Error(validation.error || "Невалидна количка");
+        return { ok: false, error: validation.error || "Невалидна количка" };
       }
       productsSubtotal = validation.total ?? productsSubtotal;
     }
@@ -57,7 +61,7 @@ export async function createOrder(
     const needsOffice =
       data.shipping_method === "office" || data.shipping_method === "apt";
     if (needsOffice && !data.shipping_office_id) {
-      throw new Error("Моля, изберете офис или автомат на Speedy");
+      return { ok: false, error: "Моля, изберете офис или автомат на Speedy" };
     }
 
     const calc = await calculateShipping({
@@ -70,9 +74,11 @@ export async function createOrder(
     const expectedTotal = productsSubtotal + shippingPrice;
 
     if (Math.abs(expectedTotal - data.total_price) > 0.05) {
-      throw new Error(
-        "Цената на доставката се е променила. Моля, опреснете и опитайте отново.",
-      );
+      return {
+        ok: false,
+        error:
+          "Цената на доставката се е променила. Моля, опреснете и опитайте отново.",
+      };
     }
 
     const order = await createOrderInDb({
@@ -82,9 +88,14 @@ export async function createOrder(
       total_price: expectedTotal,
       shipping_deadline: calc.deliveryDeadline || data.shipping_deadline,
     });
-    return order;
-  } catch (error: any) {
+
+    return { ok: true, id: String(order.id) };
+  } catch (error: unknown) {
     console.error("Error creating order:", error);
-    throw new Error(error.message || "Грешка при създаване на поръчката");
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Грешка при създаване на поръчката";
+    return { ok: false, error: message };
   }
 }

@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import type { Cart } from "./types";
+import { baseUrl } from "lib/utils";
 
 /** True when STRIPE_SECRET_KEY is set — server-side card payments. */
 export function isStripeEnabled(): boolean {
@@ -12,6 +13,13 @@ export function isStripeEnabled(): boolean {
  */
 export function isStripePublicEnabled(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim());
+}
+
+function stripeSafeImages(url?: string): string[] {
+  if (!url) return [];
+  if (url.startsWith("https://")) return [url];
+  if (url.startsWith("/")) return [`${baseUrl}${url}`];
+  return [];
 }
 
 function getStripe(): Stripe {
@@ -42,7 +50,7 @@ export async function createCheckoutSession(
         name: item.variant.title
           ? `${item.product.title} — ${item.variant.title}`
           : item.product.title,
-        images: item.product.image.url ? [item.product.image.url] : [],
+        images: stripeSafeImages(item.product.image?.url),
       },
       unit_amount: Math.round(item.price * 100),
     },
@@ -66,7 +74,9 @@ export async function createCheckoutSession(
     payment_method_types: ["card"],
     line_items: lineItems,
     mode: "payment",
-    success_url: successUrl,
+    success_url: successUrl.includes("{CHECKOUT_SESSION_ID}")
+      ? successUrl
+      : `${successUrl}${successUrl.includes("?") ? "&" : "?"}session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: cancelUrl,
     currency,
     locale: "bg",
