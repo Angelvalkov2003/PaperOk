@@ -106,17 +106,21 @@ export async function createOrder(data: CreateOrderData) {
       if (existing) return existing;
     }
     console.error("Error creating order:", error);
-    const details = error.message || error.code || "";
+    const details = [error.message, error.code, error.details, error.hint]
+      .filter(Boolean)
+      .join(" | ");
     if (
       details.includes("payment_status") ||
       details.includes("orders_status_check") ||
       details.includes("orders_payment_status")
     ) {
       throw new Error(
-        "Базата данни не е обновена за новите статуси. Изпълнете next_migration.sql в Supabase.",
+        `Базата данни не е обновена за новите статуси. Изпълнете next_migration.sql в Supabase. (${details})`,
       );
     }
-    throw new Error("Грешка при записване на поръчката. Моля, опитайте отново.");
+    throw new Error(
+      `Грешка при записване на поръчката: ${details || "unknown db error"}`,
+    );
   }
 
   if (!order) {

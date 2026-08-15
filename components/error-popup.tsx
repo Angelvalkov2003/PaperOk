@@ -2,6 +2,7 @@
 
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { SUPPORT_PHONE } from "lib/constants";
+import { useState } from "react";
 
 export function ErrorPopup({
   open,
@@ -12,7 +13,19 @@ export function ErrorPopup({
   message: string;
   onClose: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
+
   if (!open) return null;
+
+  async function copyReport() {
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  }
 
   return (
     <div
@@ -23,7 +36,7 @@ export function ErrorPopup({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl border border-paper-border bg-paper-white p-6 shadow-lg"
+        className="relative flex max-h-[85vh] w-full max-w-2xl flex-col rounded-2xl border border-paper-border bg-paper-white p-6 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -42,11 +55,21 @@ export function ErrorPopup({
           Възникна грешка
         </h2>
 
-        <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-paper-heading">
+        <pre className="mt-3 max-h-[50vh] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-paper-bg p-3 text-left text-xs leading-relaxed text-paper-heading sm:text-sm">
           {message}
-        </p>
+        </pre>
 
-        <p className="mt-5 text-sm leading-relaxed text-paper-text">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={copyReport}
+            className="rounded-md border border-paper-border bg-paper-white px-3 py-1.5 text-sm text-paper-heading transition-colors hover:bg-paper-section"
+          >
+            {copied ? "Копирано" : "Копирай репорта"}
+          </button>
+        </div>
+
+        <p className="mt-4 text-sm leading-relaxed text-paper-text">
           Моля свържете се с{" "}
           <a
             href={`tel:${SUPPORT_PHONE}`}

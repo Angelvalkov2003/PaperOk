@@ -193,10 +193,23 @@ export default function CheckoutPage() {
 
       const createPayload = await createRes.json().catch(() => ({}));
       if (!createRes.ok || !createPayload.id) {
-        throw new Error(
+        const lines = [
           createPayload.error ||
-            `Грешка при създаване на поръчката (${createRes.status})`,
-        );
+            `Грешка при създаване на поръчката (HTTP ${createRes.status})`,
+        ];
+        if (createPayload.step) lines.push(`Стъпка: ${createPayload.step}`);
+        if (createPayload.hint) lines.push(`Подсказка: ${createPayload.hint}`);
+        if (createPayload.details) {
+          lines.push(
+            `Детайли: ${JSON.stringify(createPayload.details, null, 2)}`,
+          );
+        }
+        if (createPayload.env) {
+          lines.push(`Env: ${JSON.stringify(createPayload.env, null, 2)}`);
+        }
+        lines.push(`HTTP: ${createRes.status}`);
+        lines.push(`Време: ${createPayload.durationMs ?? "?"} ms`);
+        throw new Error(lines.join("\n\n"));
       }
 
       const orderId = String(createPayload.id);
