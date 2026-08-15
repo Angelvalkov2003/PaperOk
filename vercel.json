@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron/speedy-sync",
-      "schedule": "*/30 * * * *"
-    }
-  ]
-}
