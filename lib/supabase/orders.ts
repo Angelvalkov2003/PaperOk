@@ -343,6 +343,121 @@ export async function getAllOrders() {
   return data || [];
 }
 
+export type OrdersQuery = {
+  paymentStatus?: string;
+  status?: string;
+  from?: string;
+  to?: string;
+  sort?: string;
+};
+
+const ORDER_STATUS_RANK: Record<string, number> = {
+  new: 0,
+  pending_payment: 0,
+  processing: 1,
+  confirmed: 1,
+  paid: 1,
+  shipped: 2,
+  delivered: 3,
+  completed: 3,
+  canceled: 4,
+};
+
+const PAYMENT_STATUS_RANK: Record<string, number> = {
+  cash_on_delivery: 0,
+  awaiting_payment: 1,
+  paid: 2,
+  failed: 3,
+};
+
+function endOfDayIso(dateYmd: string): string {
+  // Inclusive end of local calendar day → UTC ISO for DB compare
+  const d = new Date(`${dateYmd}T23:59:59.999`);
+  return d.toISOString();
+}
+
+function startOfDayIso(dateYmd: string): string {
+  const d = new Date(`${dateYmd}T00:00:00.000`);
+  return d.toISOString();
+}
+
+export async function getOrdersFiltered(query: OrdersQuery = {}) {
+  const supabase = createServiceClient();
+
+  let q = supabase.from("orders").select("*");
+
+  if (
+    query.paymentStatus &&
+    ["cash_on_delivery", "awaiting_payment", "paid", "failed"].includes(
+      query.paymentStatus,
+    )
+  ) {
+    q = q.eq("payment_status", query.paymentStatus);
+  }
+
+  if (
+    query.status &&
+    ["new", "processing", "shipped", "delivered", "canceled"].includes(
+      query.status,
+    )
+  ) {
+    q = q.eq("status", query.status);
+  }
+
+  if (query.from && /^\d{4}-\d{2}-\d{2}$/.test(query.from)) {
+    q = q.gte("created_at", startOfDayIso(query.from));
+  }
+
+  if (query.to && /^\d{4}-\d{2}-\d{2}$/.test(query.to)) {
+    q = q.lte("created_at", endOfDayIso(query.to));
+  }
+
+  const sort = query.sort || "date_desc";
+
+  if (sort === "date_asc") {
+    q = q.order("created_at", { ascending: true });
+  } else if (sort === "date_desc") {
+    q = q.order("created_at", { ascending: false });
+  } else {
+    // Status sorts applied in memory after fetch (custom rank)
+    q = q.order("created_at", { ascending: false });
+  }
+
+  const { data, error } = await q;
+
+  if (error) {
+    throw new Error("Failed to fetch orders");
+  }
+
+  const orders = data || [];
+
+  if (sort === "payment_status_asc" || sort === "payment_status_desc") {
+    const dir = sort.endsWith("_asc") ? 1 : -1;
+    return [...orders].sort((a, b) => {
+      const ra = PAYMENT_STATUS_RANK[a.payment_status] ?? 99;
+      const rb = PAYMENT_STATUS_RANK[b.payment_status] ?? 99;
+      if (ra !== rb) return (ra - rb) * dir;
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    });
+  }
+
+  if (sort === "status_asc" || sort === "status_desc") {
+    const dir = sort.endsWith("_asc") ? 1 : -1;
+    return [...orders].sort((a, b) => {
+      const ra = ORDER_STATUS_RANK[a.status] ?? 99;
+      const rb = ORDER_STATUS_RANK[b.status] ?? 99;
+      if (ra !== rb) return (ra - rb) * dir;
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    });
+  }
+
+  return orders;
+}
+
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   const supabase = createServiceClient();
 
@@ -468,4 +583,38 @@ export async function updateOrderFromSpeedyTrack(
   }
 
   return data;
+}
+
+/** Orders that count toward revenue (card paid, or COD collected on delivery). */
+export function isPaidRevenueOrder(order: {
+  status: string;
+  payment_status: string;
+}): boolean {
+  if (order.status === "canceled") return false;
+  if (order.payment_status === "paid") return true;
+  if (
+    order.payment_status === "cash_on_delivery" &&
+    order.status === "delivered"
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export async function deleteOrders(ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+
+  const supabase = createServiceClient();
+  const uniqueIds = [...new Set(ids.filter(Boolean))];
+
+  const { error, count } = await supabase
+    .from("orders")
+    .delete({ count: "exact" })
+    .in("id", uniqueIds);
+
+  if (error) {
+    throw new Error("Failed to delete orders");
+  }
+
+  return count ?? uniqueIds.length;
 }

@@ -29,11 +29,11 @@ export function paperBgAt(index: number): string {
 
 /** Brand-tinted overlays — keep site colors, let texture show through */
 export const PAPER_OVERLAYS = {
-  hero: "rgba(248, 245, 239, 0.72)",
-  cream: "rgba(248, 245, 239, 0.78)",
-  surface: "rgba(210, 197, 180, 0.88)",
-  section: "rgba(239, 231, 219, 0.76)",
-  accent: "rgba(221, 232, 204, 0.74)",
+  hero: "rgba(248, 245, 236, 0.74)",
+  cream: "rgba(248, 245, 236, 0.80)",
+  surface: "rgba(238, 241, 223, 0.88)",
+  section: "rgba(231, 235, 216, 0.78)",
+  accent: "rgba(228, 235, 214, 0.76)",
   card: "rgba(255, 255, 255, 0.72)",
   cardSoft: "rgba(255, 252, 247, 0.68)",
   white: "rgba(255, 255, 255, 0.78)",

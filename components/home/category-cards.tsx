@@ -9,7 +9,7 @@ const categories = [
     description:
       "Картички от семенна хартия с цветя — за повод, за любимите хора и вдъхновяващи послания.",
     href: "/products?collection=kartichki",
-    tone: "from-[#E8F0D8] to-[#F3EDE3]",
+    tone: "from-[#EEF1DF] to-[#F8F5EC]",
     image: "/IMG_9774.JPG",
   },
   {
@@ -17,7 +17,7 @@ const categories = [
     description:
       "Бележници, календари, сашета и комплекти — готови артикули с еко характер.",
     href: "/products?collection=podaraci",
-    tone: "from-[#F3EDE3] to-[#EFE7DB]",
+    tone: "from-[#F8F5EC] to-[#E7EBD8]",
     image: "/IMG_9772.PNG",
   },
   {
@@ -25,7 +25,7 @@ const categories = [
     description:
       "Материал за творчество, подаръци и бизнес проекти — с цветя, билки или листенца.",
     href: "/products?collection=semenna-hartia",
-    tone: "from-[#DDE8CC] to-[#E8F0D8]",
+    tone: "from-[#E4EBD6] to-[#EEF1DF]",
     image: "/IMG_9777.JPG",
   },
 ];

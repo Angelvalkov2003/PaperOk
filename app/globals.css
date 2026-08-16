@@ -4,22 +4,23 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --paper-bg: #F8F5EF;
-  --paper-section: #EFE7DB;
-  --paper-surface: #D2C5B4;
-  --paper-surface-muted: #E0D5C6;
-  --paper-surface-dark: #C4B5A3;
-  --paper-accent-bg: #DDE8CC;
-  --paper-green: #5E7F3A;
-  --paper-green-hover: #4E6B31;
-  --paper-heading: #4A3428;
-  --paper-text: #66615A;
-  --paper-muted: #9A958C;
+  --paper-bg: #F8F5EC;
+  --paper-section: #E7EBD8;
+  --paper-surface: #EEF1DF;
+  --paper-surface-muted: #F3F5E8;
+  --paper-surface-dark: #D5DCC4;
+  --paper-footer: #E7EBD8;
+  --paper-accent-bg: #E4EBD6;
+  --paper-green: #6F8A55;
+  --paper-green-hover: #58713F;
+  --paper-heading: #403B32;
+  --paper-text: #403B32;
+  --paper-muted: #6E695F;
   --paper-white: #FFFFFF;
-  --paper-border: #E5DDD0;
-  --paper-border-strong: #C9BAA8;
-  --paper-shadow: 0 4px 24px rgba(74, 52, 40, 0.08);
-  --paper-shadow-lg: 0 8px 32px rgba(74, 52, 40, 0.12);
+  --paper-border: #D9DFCA;
+  --paper-border-strong: #C5CEB0;
+  --paper-shadow: 0 4px 24px rgba(64, 59, 50, 0.08);
+  --paper-shadow-lg: 0 8px 32px rgba(64, 59, 50, 0.12);
 }
 
 @theme inline {
@@ -28,6 +29,7 @@
   --color-paper-surface: var(--paper-surface);
   --color-paper-surface-muted: var(--paper-surface-muted);
   --color-paper-surface-dark: var(--paper-surface-dark);
+  --color-paper-footer: var(--paper-footer);
   --color-paper-accent-bg: var(--paper-accent-bg);
   --color-paper-green: var(--paper-green);
   --color-paper-green-hover: var(--paper-green-hover);
@@ -108,7 +110,7 @@ button {
   border-radius: 0.75rem;
   border: 1px solid color-mix(in srgb, var(--paper-border) 85%, transparent);
   background-color: var(--paper-bg);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%235E7F3A'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236F8A55'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
   background-position: right 0.85rem center;
   background-repeat: no-repeat;
   background-size: 1rem;

@@ -1,4 +1,4 @@
-import { getAllOrders } from "lib/supabase/orders";
+import { getOrdersFiltered } from "lib/supabase/orders";
 import {
   orderStatusBadgeClass,
   orderStatusLabel,
@@ -6,13 +6,32 @@ import {
   paymentStatusBadgeClass,
   paymentStatusLabel,
 } from "lib/order-status";
+import { OrdersFilter } from "components/admin/orders-filter";
 import Link from "next/link";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function AdminOrdersPage() {
-  const orders = await getAllOrders();
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    paymentStatus?: string;
+    status?: string;
+    from?: string;
+    to?: string;
+    sort?: string;
+  }>;
+}) {
+  const params = await searchParams;
+  const orders = await getOrdersFiltered({
+    paymentStatus: params.paymentStatus,
+    status: params.status,
+    from: params.from,
+    to: params.to,
+    sort: params.sort,
+  });
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -24,6 +43,14 @@ export default async function AdminOrdersPage() {
           Управление на всички поръчки
         </p>
       </div>
+
+      <Suspense fallback={null}>
+        <OrdersFilter />
+      </Suspense>
+
+      <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+        Показани: <span className="font-medium text-gray-800 dark:text-gray-200">{orders.length}</span>
+      </p>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
@@ -66,7 +93,7 @@ export default async function AdminOrdersPage() {
                     colSpan={9}
                     className="px-6 py-4 text-center text-gray-500 dark:text-gray-400"
                   >
-                    Няма поръчки
+                    Няма поръчки за избраните филтри
                   </td>
                 </tr>
               ) : (

@@ -40,7 +40,7 @@ export function BusinessSamplePrices() {
       <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <Reveal>
           <h2 className="font-heading mb-4 text-center text-3xl font-bold text-paper-heading">
-            Примерни цени
+            Размери и примерни цени
           </h2>
           <p className="mx-auto mb-8 max-w-3xl text-center text-sm leading-relaxed text-paper-muted sm:text-base">
             Ориентировъчни цени с включен ДДС. Посочените цени са за 1 бр. За
@@ -65,7 +65,7 @@ export function BusinessSamplePrices() {
               <div className="overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
                 <table className="w-full min-w-[38rem] border-collapse text-left text-sm sm:min-w-[44rem] sm:text-base">
                   <caption className="sr-only">
-                    Примерни цени за 1 бр. според размер и количество
+                    Размери и примерни цени за 1 бр. според количество
                   </caption>
                   <thead>
                     <tr className="bg-paper-green text-white">

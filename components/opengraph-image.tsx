@@ -32,7 +32,7 @@ export default async function OpengraphImage(
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#F8F5EF",
+          background: "#F8F5EC",
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -49,7 +49,7 @@ export default async function OpengraphImage(
               marginTop: 40,
               fontSize: 48,
               fontWeight: 700,
-              color: "#4A3428",
+              color: "#403B32",
               fontFamily: fontFile ? "Inter" : "sans-serif",
             }}
           >

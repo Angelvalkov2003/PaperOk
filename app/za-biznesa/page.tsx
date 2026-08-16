@@ -43,17 +43,6 @@ const paperTypes = [
   },
 ];
 
-const sizes = [
-  "56 × 50 mm",
-  "65 × 65 mm",
-  "90 × 50 mm",
-  "50 × 70 mm",
-  "74 × 105 mm (A7)",
-  "105 × 148 mm (A6)",
-  "148 × 210 mm (A5)",
-  "Размер по поръчка",
-];
-
 const benefits = [
   {
     title: "Продукти, които оставят впечатление",
@@ -168,47 +157,6 @@ export default function ZaBiznesaPage() {
               </Reveal>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Размери и формати */}
-      <section className="relative overflow-hidden bg-paper-bg py-16 md:py-20">
-        <PaperTexture
-          src={PAPER_BACKGROUNDS.plain}
-          overlay={PAPER_OVERLAYS.cream}
-          sizes="100vw"
-          quality={85}
-        />
-        <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <Reveal>
-            <h2 className="font-heading mb-10 text-center text-3xl font-bold text-paper-heading">
-              Размери и формати
-            </h2>
-          </Reveal>
-          <ul className={`${BUSINESS_GRID_CLASS} gap-3 sm:grid-cols-2`}>
-            {sizes.map((size, index) => (
-              <Reveal
-                key={size}
-                as="li"
-                delay={index * 40}
-                variant="left"
-                className={BUSINESS_GRID_REVEAL_CLASS}
-              >
-                <BusinessCard
-                  textureSrc={CARD_BG}
-                  textureSizes="(min-width: 768px) 48rem, 100vw"
-                  rounded="lg"
-                  padding="md"
-                  bodyClassName="justify-center"
-                >
-                  <div className="flex min-h-[3rem] items-center gap-3">
-                    <span className="shrink-0 text-paper-green">✓</span>
-                    <span className="text-paper-text">{size}</span>
-                  </div>
-                </BusinessCard>
-              </Reveal>
-            ))}
-          </ul>
         </div>
       </section>
 

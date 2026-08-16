@@ -134,7 +134,7 @@ export function ProductTabs({ product }: { product: Product }) {
   const [activeTab, setActiveTab] = useState<TabId>("description");
 
   return (
-    <div className="mt-8 overflow-hidden rounded-[1.35rem] border border-paper-border/70 bg-[#F3EDE3]/80">
+    <div className="mt-8 overflow-hidden rounded-[1.35rem] border border-paper-border/70 bg-paper-surface/80">
       <div className="flex justify-center border-b border-paper-border-strong/60 bg-paper-surface/75 px-4 py-3 sm:px-6">
         <div className="grid w-full max-w-md grid-cols-2 justify-items-center gap-2 sm:flex sm:max-w-none sm:flex-wrap sm:justify-center">
           {tabs.map((tab) => (

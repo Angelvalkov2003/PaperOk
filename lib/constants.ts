@@ -84,6 +84,7 @@ export const FACEBOOK_URL =
   "https://www.facebook.com/profile.php?id=61591837265074";
 export const YOUTUBE_URL = "https://www.youtube.com/@paperok.official";
 export const TIKTOK_URL = "https://www.tiktok.com/@paperok.official";
+export const LINKEDIN_URL = "https://www.linkedin.com/company/paperok/";
 export const CONTACT_LOCATION = "София, България";
 export const SUPPORT_PHONE = "0877836667";
 
