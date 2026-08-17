@@ -1,6 +1,7 @@
 "use client";
 
 import { createSpeedyShipmentAction } from "app/admin/orders/[id]/speedy-actions";
+import { SyncSpeedyButton } from "components/admin/sync-speedy-button";
 import type { ShipmentEligibility } from "lib/speedy-order";
 import { useErrorPopup } from "components/error-popup-provider";
 import { useRouter } from "next/navigation";
@@ -47,9 +48,8 @@ export function SpeedyShipmentPanel({
         Speedy товарителница
       </h2>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-        Създайте товарителница директно от данните на поръчката. Статусът на
-        поръчката не се променя автоматично при създаване — актуализацията
-        става след приемане от Speedy (cron sync).
+        Създайте товарителница директно от данните на поръчката. Статусът не се
+        сменя при създаване — обновете го от Speedy след приемане или доставка.
       </p>
 
       {hasShipment ? (
@@ -85,14 +85,17 @@ export function SpeedyShipmentPanel({
             ) : null}
           </div>
 
-          <a
-            href={labelUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
-          >
-            Принтирай товарителница
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={labelUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+            >
+              Принтирай товарителница
+            </a>
+            <SyncSpeedyButton orderId={orderId} />
+          </div>
         </div>
       ) : (
         <div className="space-y-3">

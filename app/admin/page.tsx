@@ -7,6 +7,7 @@ import {
 } from "lib/admin-dashboard-stats";
 import { DashboardPeriodFilter } from "components/admin/dashboard-period-filter";
 import { DeleteTestOrdersPanel } from "components/admin/delete-test-orders-panel";
+import { SyncSpeedyButton } from "components/admin/sync-speedy-button";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -46,13 +47,16 @@ export default async function AdminDashboard({
 
   return (
     <div className="mx-auto max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Административен панел
-        </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Преглед на поръчките, запитванията и приходите
-        </p>
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Административен панел
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Преглед на поръчките, запитванията и приходите
+          </p>
+        </div>
+        <SyncSpeedyButton prominent />
       </div>
 
       {/* Main KPIs */}

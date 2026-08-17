@@ -89,12 +89,12 @@ export default function ShippingPaymentPage() {
               <ul className="list-disc space-y-2 pl-5 leading-relaxed text-paper-text">
                 <li>
                   <strong className="text-paper-heading">Изработка:</strong> обикновено
-                  3–7 работни дни (персоналните поръчки могат да отнемат повече
+                  1–2 работни дни (персоналните поръчки могат да отнемат повече
                   време).
                 </li>
                 <li>
                   <strong className="text-paper-heading">Доставка със Speedy:</strong>{" "}
-                  ориентировъчно 1–3 работни дни след предаване на пратката на
+                  ориентировъчно 1–2 работни дни след предаване на пратката на
                   куриера, в зависимост от населеното място.
                 </li>
               </ul>
@@ -109,7 +109,7 @@ export default function ShippingPaymentPage() {
               <ul className="list-disc space-y-2 pl-5 leading-relaxed text-paper-text">
                 <li>
                   <strong className="text-paper-heading">Онлайн с карта</strong> —
-                  сигурно плащане чрез Stripe (когато е активирано).
+                  сигурно плащане чрез Stripe.
                 </li>
                 <li>
                   <strong className="text-paper-heading">Наложен платеж</strong> —
@@ -131,7 +131,7 @@ export default function ShippingPaymentPage() {
                 </li>
                 <li>
                   Когато пратката бъде предадена на Speedy, ще ви уведомим за
-                  изпращането (и при възможност с номер за проследяване).
+                  изпращането.
                 </li>
               </ul>
               <p className="mt-4 leading-relaxed text-paper-text">

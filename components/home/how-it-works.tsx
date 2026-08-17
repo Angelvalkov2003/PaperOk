@@ -40,11 +40,17 @@ export function HowItWorks() {
       subtitle="Четири кратки стъпки — от подаръка до живите растения"
       texture="plain"
     >
-      <ol className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="grid auto-rows-fr grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((step, index) => (
-          <Reveal key={step.number} as="li" delay={index * 90} variant="up">
+          <Reveal
+            key={step.number}
+            as="li"
+            delay={index * 90}
+            variant="up"
+            className="h-full"
+          >
             <div
-              className="hover-lift relative overflow-hidden rounded-2xl border border-paper-border/70 p-6"
+              className="hover-lift relative flex h-full flex-col overflow-hidden rounded-2xl border border-paper-border/70 p-6"
               style={{ boxShadow: "var(--paper-shadow)" }}
             >
               <PaperTexture
@@ -59,14 +65,14 @@ export function HowItWorks() {
                   aria-hidden
                 />
               )}
-              <div className="relative z-10">
+              <div className="relative z-10 flex h-full flex-col">
                 <span className="font-heading text-sm font-semibold tracking-[0.18em] text-paper-green">
                   {step.number}
                 </span>
-                <h3 className="mt-4 font-heading text-xl font-semibold text-paper-heading">
+                <h3 className="mt-4 line-clamp-2 min-h-[3.75rem] font-heading text-xl font-semibold leading-snug text-paper-heading">
                   {step.title}
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-paper-muted">
+                <p className="mt-3 line-clamp-4 min-h-[6rem] flex-1 text-sm leading-relaxed text-paper-muted">
                   {step.description}
                 </p>
               </div>

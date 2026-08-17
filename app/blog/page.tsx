@@ -38,34 +38,44 @@ export default async function BlogPage() {
           {posts.length === 0 ? (
             <p className="text-paper-muted">Все още няма публикувани статии.</p>
           ) : (
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid auto-rows-fr grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {posts.map((post, index) => (
-                <Reveal key={post.id} delay={index * 80} variant="up">
+                <Reveal
+                  key={post.id}
+                  delay={index * 80}
+                  variant="up"
+                  className="h-full"
+                >
                   <Link
                     href={`/blog/${post.slug}`}
-                    className="group hover-lift block overflow-hidden rounded-lg border border-paper-border bg-paper-white/90"
+                    className="group hover-lift flex h-full flex-col overflow-hidden rounded-lg border border-paper-border bg-paper-white/90"
                   >
-                    {post.featuredImage?.url && (
-                      <div className="overflow-hidden">
+                    <div className="aspect-[16/10] w-full shrink-0 overflow-hidden bg-paper-section">
+                      {post.featuredImage?.url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={post.featuredImage.url}
                           alt={post.title}
-                          className="img-zoom h-48 w-full object-cover"
+                          className="img-zoom h-full w-full object-cover"
                         />
-                      </div>
-                    )}
-                    <div className="p-4">
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <span className="font-heading text-sm text-paper-muted">
+                            PaperOK
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-1 flex-col p-4">
                       <time className="text-xs text-paper-muted">
                         {new Date(post.createdAt).toLocaleDateString("bg-BG")}
                       </time>
-                      <h2 className="font-heading mt-1 text-lg font-semibold text-paper-heading transition-colors group-hover:text-paper-green">
+                      <h2 className="font-heading mt-1 line-clamp-2 min-h-[3.5rem] text-lg font-semibold leading-snug text-paper-heading transition-colors group-hover:text-paper-green">
                         {post.title}
                       </h2>
-                      {post.excerpt && (
-                        <p className="mt-2 line-clamp-3 text-sm text-paper-text">
-                          {post.excerpt}
-                        </p>
-                      )}
+                      <p className="mt-2 line-clamp-3 min-h-[3.75rem] text-sm leading-5 text-paper-text">
+                        {post.excerpt || "\u00a0"}
+                      </p>
                     </div>
                   </Link>
                 </Reveal>

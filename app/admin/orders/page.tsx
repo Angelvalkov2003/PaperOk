@@ -7,6 +7,7 @@ import {
   paymentStatusLabel,
 } from "lib/order-status";
 import { OrdersFilter } from "components/admin/orders-filter";
+import { SyncSpeedyButton } from "components/admin/sync-speedy-button";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -35,13 +36,16 @@ export default async function AdminOrdersPage({
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Поръчки
-        </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Управление на всички поръчки
-        </p>
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Поръчки
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Управление на всички поръчки
+          </p>
+        </div>
+        <SyncSpeedyButton prominent />
       </div>
 
       <Suspense fallback={null}>
