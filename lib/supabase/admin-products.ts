@@ -1,4 +1,5 @@
 import { createServiceClient } from "./service";
+import { compareByPosition } from "lib/sort-position";
 import type { Image, ProductSizeVariant } from "lib/types";
 import {
   ADMIN_PRODUCTS_DEFAULT_PAGE_SIZE,
@@ -134,8 +135,11 @@ export async function getAllProductsForAdmin(params?: {
     } else if (sortBy === "created_at") {
       query = query.order("created_at", { ascending: sortOrder === "asc" });
     } else {
-      // Default: position
-      query = query.order("position", { ascending: sortOrder === "asc" });
+      query = query.order("position", {
+        ascending: sortOrder === "asc",
+        nullsFirst: false,
+      });
+      query = query.order("title", { ascending: true });
     }
 
     const { data, error } = await query;
@@ -184,6 +188,13 @@ export async function getAllProductsForAdmin(params?: {
         } else {
           return b.orderCount - a.orderCount;
         }
+      });
+    } else if (sortBy === "position") {
+      productsWithCounts.sort((a, b) => {
+        const byPosition = compareByPosition(a.position, b.position);
+        const ordered = sortOrder === "desc" ? -byPosition : byPosition;
+        if (ordered !== 0) return ordered;
+        return String(a.title || "").localeCompare(String(b.title || ""), "bg");
       });
     }
 

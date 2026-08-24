@@ -7,6 +7,7 @@ import {
   type CategoryWithAvailability,
 } from "lib/category-visibility";
 import { isProductPlantable } from "lib/product-plantable";
+import { compareByPosition } from "lib/sort-position";
 import { cache } from "react";
 import { createServiceClient } from "./service";
 
@@ -47,7 +48,13 @@ export async function getProducts(params?: {
   limit?: number;
   offset?: number;
   excludeId?: string;
-  sort?: "price-asc" | "price-desc" | "discount-desc" | "name-asc" | "newest";
+  sort?:
+    | "price-asc"
+    | "price-desc"
+    | "discount-desc"
+    | "name-asc"
+    | "newest"
+    | "position";
   minPrice?: number;
   maxPrice?: number;
   categories?: string[];
@@ -138,8 +145,8 @@ export async function getProducts(params?: {
       query = query.range(params.offset, params.offset + (params.limit || 10) - 1);
     }
 
-    // Apply sorting
-    const sort = params?.sort || "newest";
+    // Apply sorting — default is position (lower number first)
+    const sort = params?.sort || "position";
     if (sort === "price-asc") {
       query = query.order("price", { ascending: true });
     } else if (sort === "price-desc") {
@@ -149,8 +156,7 @@ export async function getProducts(params?: {
     } else if (sort === "newest") {
       query = query.order("created_at", { ascending: false });
     } else {
-      // Default: position
-      query = query.order("position", { ascending: true });
+      query = query.order("position", { ascending: true, nullsFirst: false });
       query = query.order("created_at", { ascending: false });
     }
 
@@ -223,8 +229,10 @@ export async function getProducts(params?: {
       } else if (sort === "newest") {
         fallbackQuery = fallbackQuery.order("created_at", { ascending: false });
       } else {
-        // Default: position
-        fallbackQuery = fallbackQuery.order("position", { ascending: true });
+        fallbackQuery = fallbackQuery.order("position", {
+          ascending: true,
+          nullsFirst: false,
+        });
         fallbackQuery = fallbackQuery.order("created_at", { ascending: false });
       }
 
@@ -267,6 +275,12 @@ export async function getProducts(params?: {
           : 0;
         return discountB - discountA;
       });
+    } else if (sort === "position") {
+      products = products.sort(
+        (a, b) =>
+          compareByPosition(a.position, b.position) ||
+          a.title.localeCompare(b.title, "bg"),
+      );
     }
 
     // Parent category page: products assigned to this category first,
@@ -275,7 +289,14 @@ export async function getProducts(params?: {
       products = products.sort((a, b) => {
         const aDirect = a.category === collectionHandle ? 0 : 1;
         const bDirect = b.category === collectionHandle ? 0 : 1;
-        return aDirect - bDirect;
+        if (aDirect !== bDirect) return aDirect - bDirect;
+        if (sort === "position") {
+          return (
+            compareByPosition(a.position, b.position) ||
+            a.title.localeCompare(b.title, "bg")
+          );
+        }
+        return 0;
       });
     }
 
@@ -338,7 +359,7 @@ export async function getCollections(): Promise<Collection[]> {
     const { data, error } = await supabase
       .from("collections")
       .select("*")
-      .order("position", { ascending: true })
+      .order("position", { ascending: true, nullsFirst: false })
       .order("title", { ascending: true });
 
     if (error) {
@@ -434,5 +455,6 @@ function transformProduct(data: any): Product {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     available: data.available !== false,
+    position: Number(data.position) || 0,
   };
 }

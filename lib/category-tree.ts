@@ -1,4 +1,5 @@
 import { MAIN_MENU_SECTIONS } from "lib/constants";
+import { compareByPosition } from "lib/sort-position";
 
 export type CategoryNode = {
   id: string;
@@ -45,7 +46,8 @@ export function buildCategoryTree(categories: FlatCategory[]): CategoryNode[] {
   const sortNodes = (nodes: CategoryNode[]) => {
     nodes.sort(
       (a, b) =>
-        a.position - b.position || a.title.localeCompare(b.title, "bg"),
+        compareByPosition(a.position, b.position) ||
+        a.title.localeCompare(b.title, "bg"),
     );
     nodes.forEach((n) => sortNodes(n.children));
   };

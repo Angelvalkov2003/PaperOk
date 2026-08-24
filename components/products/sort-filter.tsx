@@ -11,6 +11,7 @@ import clsx from "clsx";
 import { AnchoredPortal } from "components/ui/anchored-portal";
 
 type SortOption =
+  | "position"
   | "price-asc"
   | "price-desc"
   | "discount-desc"
@@ -18,6 +19,7 @@ type SortOption =
   | "newest";
 
 const sortOptions: { value: SortOption; label: string }[] = [
+  { value: "position", label: "По позиция" },
   { value: "price-asc", label: "Цена: Възходяща" },
   { value: "price-desc", label: "Цена: Низходяща" },
   { value: "discount-desc", label: "Най-голямо намаление" },
@@ -28,13 +30,13 @@ const sortOptions: { value: SortOption; label: string }[] = [
 export function SortFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentSort = (searchParams.get("sort") as SortOption) || "newest";
+  const currentSort = (searchParams.get("sort") as SortOption) || "position";
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const currentLabel =
-    sortOptions.find((opt) => opt.value === currentSort)?.label || "Най-нови";
+    sortOptions.find((opt) => opt.value === currentSort)?.label || "По позиция";
 
   useEffect(() => {
     if (!isOpen) return;
@@ -60,8 +62,13 @@ export function SortFilter() {
 
   const handleSortChange = (sort: SortOption) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("sort", sort);
-    router.push(`/products?${params.toString()}`);
+    if (sort === "position") {
+      params.delete("sort");
+    } else {
+      params.set("sort", sort);
+    }
+    const qs = params.toString();
+    router.push(qs ? `/products?${qs}` : "/products");
     setIsOpen(false);
   };
 

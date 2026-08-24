@@ -119,8 +119,8 @@ export function ProductsFilter({ collections }: ProductsFilterProps) {
           onChange={(e) => setSortOrder(e.target.value)}
           className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
         >
-          <option value="asc">Възходящ</option>
-          <option value="desc">Низходящ</option>
+          <option value="asc">Възходящ (по-малко число отгоре)</option>
+          <option value="desc">Низходящ (по-голямо число отгоре)</option>
         </select>
       </div>
     </div>

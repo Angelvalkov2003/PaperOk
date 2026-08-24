@@ -43,6 +43,8 @@ export type Product = {
   createdAt: string;
   updatedAt: string;
   available: boolean;
+  /** Lower number appears first in listings. */
+  position: number;
 };
 
 export type CartItem = {

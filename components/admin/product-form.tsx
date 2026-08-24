@@ -404,10 +404,10 @@ export function ProductForm({ product, collections }: ProductFormProps) {
             value={formData.position}
             onChange={(e) => setFormData({ ...formData, position: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-            placeholder="0 = първа позиция"
+            placeholder="1 = най-отгоре"
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            0 = първа позиция, по-големи числа = по-назад
+            По-малко число = по-нагоре в админа и на сайта. Например 1 е преди 5.
           </p>
         </div>
       </div>

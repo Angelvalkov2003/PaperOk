@@ -44,6 +44,7 @@ export default async function ProductsPage({
     | "discount-desc"
     | "name-asc"
     | "newest"
+    | "position"
     | undefined;
   const minPrice = params.minPrice ? parseFloat(params.minPrice) : undefined;
   const maxPrice = params.maxPrice ? parseFloat(params.maxPrice) : undefined;
@@ -55,7 +56,7 @@ export default async function ProductsPage({
   const [products, collections] = await Promise.all([
     getProducts({
       collection,
-      sort: sort || "newest",
+      sort: sort || "position",
       minPrice,
       maxPrice,
       categories,

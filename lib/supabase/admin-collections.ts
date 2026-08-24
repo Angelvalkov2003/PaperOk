@@ -33,7 +33,7 @@ export async function getAllCollectionsForAdmin() {
     const { data, error } = await supabase
       .from("collections")
       .select("*")
-      .order("position", { ascending: true })
+      .order("position", { ascending: true, nullsFirst: false })
       .order("title", { ascending: true });
 
     if (error) {
