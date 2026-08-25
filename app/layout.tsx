@@ -52,6 +52,11 @@ export const metadata = {
     follow: true,
     index: true,
   },
+  verification: {
+    google:
+      process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ||
+      "kf2c5zNxLXngidhbvx3kxFWNst6UjwqH6ucMVeWjA_U",
+  },
   openGraph: {
     type: "website",
     locale: "bg_BG",
