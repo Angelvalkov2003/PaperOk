@@ -27,6 +27,9 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
+const GOOGLE_SITE_VERIFICATION =
+  "kf2c5zNxLXngidhbvx3kxFWNst6UjwqH6ucMVeWjA_U";
+
 export const metadata = {
   metadataBase: new URL(baseUrl),
   title: {
@@ -53,9 +56,7 @@ export const metadata = {
     index: true,
   },
   verification: {
-    google:
-      process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ||
-      "kf2c5zNxLXngidhbvx3kxFWNst6UjwqH6ucMVeWjA_U",
+    google: GOOGLE_SITE_VERIFICATION,
   },
   openGraph: {
     type: "website",
@@ -88,6 +89,12 @@ export default async function RootLayout({
 }) {
   return (
     <html lang="bg" className={`${cormorant.variable} ${dmSans.variable}`}>
+      <head>
+        <meta
+          name="google-site-verification"
+          content={GOOGLE_SITE_VERIFICATION}
+        />
+      </head>
       <body
         className={`${dmSans.className} bg-paper-bg text-paper-text antialiased selection:bg-paper-accent-bg selection:text-paper-heading`}
       >
