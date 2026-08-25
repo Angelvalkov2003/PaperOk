@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { XMarkIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
+import { GA_MEASUREMENT_ID } from "lib/constants";
 
 type CookiePreferences = {
   necessary: boolean;
@@ -55,7 +56,7 @@ export function CookieConsent() {
   const initializeAnalytics = (enabled: boolean) => {
     if (!enabled || typeof window === "undefined") return;
 
-    const gaId = process.env.NEXT_PUBLIC_GA_ID;
+    const gaId = process.env.NEXT_PUBLIC_GA_ID || GA_MEASUREMENT_ID;
     // Don't initialize if no ID or if explicitly set to "none"
     if (!gaId || gaId.trim() === "" || gaId.toLowerCase() === "none") {
       return; // Silently skip if not configured
