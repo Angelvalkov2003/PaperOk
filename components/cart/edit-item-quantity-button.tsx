@@ -11,11 +11,18 @@ export function EditItemQuantityButton({
 }: {
   item: CartItem;
   type: "plus" | "minus";
-  optimisticUpdate: (itemId: string, updateType: "plus" | "minus" | "delete") => void;
+  optimisticUpdate: (
+    itemId: string,
+    updateType: "plus" | "minus" | "delete",
+  ) => void;
 }) {
+  const minQuantity = Math.max(1, item.minQuantity || 1);
+  const disableMinus = type === "minus" && item.quantity <= minQuantity;
+
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (disableMinus) return;
     optimisticUpdate(item.id, type);
   };
 
@@ -23,11 +30,12 @@ export function EditItemQuantityButton({
     <button
       type="button"
       onClick={handleClick}
+      disabled={disableMinus}
       aria-label={
         type === "plus" ? "Увеличи количество" : "Намали количество"
       }
       className={clsx(
-        "ease flex h-full min-w-[36px] max-w-[36px] flex-none items-center justify-center rounded-full p-2 transition-all duration-200 hover:border-paper-border hover:opacity-80",
+        "ease flex h-full min-w-[36px] max-w-[36px] flex-none items-center justify-center rounded-full p-2 transition-all duration-200 hover:border-paper-border hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40",
         {
           "ml-auto": type === "minus",
         },

@@ -1,6 +1,5 @@
 "use client";
 
-import CartModal from "components/cart/modal";
 import { SiteLogo } from "components/site-logo";
 import {
   buildCategoryTree,
@@ -9,11 +8,34 @@ import {
 } from "lib/category-tree";
 import { FIXED_MENU, MAIN_MENU_SECTIONS } from "lib/constants";
 import { ChevronDownIcon, ChevronRightIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import MobileMenu from "./navbar/mobile-menu";
 import Search, { SearchSkeleton } from "./navbar/search";
+
+const CartModal = dynamic(() => import("components/cart/modal"), {
+  ssr: false,
+  loading: () => (
+    <div className="relative flex h-10 w-10 items-center justify-center rounded-full text-paper-text/40">
+      <svg
+        className="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+        aria-hidden
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"
+        />
+      </svg>
+    </div>
+  ),
+});
 
 function collectionFromPath(path: string): string | null {
   if (!path.includes("collection=")) return null;
@@ -389,7 +411,7 @@ export function NavbarClient() {
   const [categories, setCategories] = useState<FlatCategory[]>([]);
 
   useEffect(() => {
-    fetch("/api/collections", { cache: "no-store" })
+    fetch("/api/collections")
       .then((res) => res.json())
       .then((data) => {
         if (!Array.isArray(data)) return;

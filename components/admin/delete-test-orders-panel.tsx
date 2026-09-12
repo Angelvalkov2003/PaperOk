@@ -9,6 +9,7 @@ import {
   paymentMethodLabel,
   paymentStatusLabel,
 } from "lib/order-status";
+import { formatDateTimeBg } from "lib/utils";
 
 type OrderRow = {
   id: string;
@@ -221,7 +222,7 @@ export function DeleteTestOrdersPanel({ orders }: { orders: OrderRow[] }) {
                       {paymentStatusLabel(order.payment_status)}
                     </td>
                     <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(order.created_at).toLocaleString("bg-BG")}
+                      {formatDateTimeBg(order.created_at)}
                     </td>
                   </tr>
                 );

@@ -8,6 +8,7 @@ import {
 } from "lib/order-status";
 import { OrdersFilter } from "components/admin/orders-filter";
 import { SyncSpeedyButton } from "components/admin/sync-speedy-button";
+import { formatDateTimeBg } from "lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -157,13 +158,7 @@ export default async function AdminOrdersPage({
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(order.created_at).toLocaleDateString("bg-BG", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatDateTimeBg(order.created_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <Link

@@ -10,6 +10,8 @@ import {
   type OrderStatus,
 } from "lib/order-status";
 import { toast } from "sonner";
+import { formatDateTimeLocalBg } from "lib/utils";
+import { AdminPriceInput, parseAdminPrice } from "./admin-price-input";
 
 interface OrderEditFormProps {
   order: {
@@ -31,15 +33,8 @@ export function OrderEditForm({ order }: OrderEditFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const formatDateForInput = (dateString: string) => {
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
+  const formatDateForInput = (dateString: string) =>
+    formatDateTimeLocalBg(dateString);
 
   const [formData, setFormData] = useState({
     customer_name: order.customer_name,
@@ -63,7 +58,7 @@ export function OrderEditForm({ order }: OrderEditFormProps) {
         customer_email: formData.customer_email,
         customer_phone: formData.customer_phone || undefined,
         customer_address: formData.customer_address,
-        total_price: parseFloat(formData.total_price),
+        total_price: parseAdminPrice(formData.total_price) ?? 0,
         payment_method: formData.payment_method,
         status: formData.status,
         comment: formData.comment || undefined,
@@ -168,15 +163,13 @@ export function OrderEditForm({ order }: OrderEditFormProps) {
         >
           Обща сума (€) *
         </label>
-        <input
-          type="number"
+        <AdminPriceInput
+          mode="string"
           id="total_price"
           required
-          step="0.01"
-          min="0"
           value={formData.total_price}
-          onChange={(e) =>
-            setFormData({ ...formData, total_price: e.target.value })
+          onValueChange={(total_price) =>
+            setFormData({ ...formData, total_price })
           }
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
           disabled={loading}

@@ -60,9 +60,9 @@ function containsHandle(node: CategoryNode, handle: string): boolean {
 }
 
 const NEST_PANELS = [
-  "mt-1.5 space-y-0.5 rounded-xl border-l-[3px] border-paper-green/70 bg-paper-accent-bg/60 py-1.5 pl-2.5 pr-1",
-  "mt-1 space-y-0.5 rounded-lg border-l-[3px] border-paper-green/45 bg-paper-section/80 py-1 pl-2 pr-0.5",
-  "mt-1 space-y-0.5 rounded-lg border-l-2 border-paper-green/30 bg-paper-surface-muted/90 py-0.5 pl-2",
+  "mobile-plant-nest mobile-plant-nest--0",
+  "mobile-plant-nest mobile-plant-nest--1",
+  "mobile-plant-nest mobile-plant-nest--2",
 ] as const;
 
 function nestPanelClass(depth: number) {
@@ -91,7 +91,12 @@ function MobileTreeNode({
     }
   }, [isActive, isAncestor]);
 
-  const textSize = depth === 0 ? "text-[16px]" : "text-[15px]";
+  const textSize = depth === 0 ? "text-[15px]" : "text-[14px]";
+  const titleClass = `min-w-0 flex-1 py-2 text-left font-medium tracking-normal transition-colors ${textSize} ${
+    isActive
+      ? "text-paper-green"
+      : "text-paper-heading/90 hover:text-paper-green"
+  }`;
 
   if (!hasChildren) {
     return (
@@ -99,10 +104,10 @@ function MobileTreeNode({
         <Link
           href={`/products?collection=${node.handle}`}
           onClick={onNavigate}
-          className={`block rounded-lg px-2.5 py-2.5 font-medium tracking-wide transition-colors ${textSize} ${
+          className={`block rounded-lg px-2 py-2 font-normal tracking-normal transition-colors ${textSize} ${
             isActive
-              ? "bg-paper-white/70 text-paper-green"
-              : "text-paper-text hover:bg-paper-white/50 hover:text-paper-green"
+              ? "bg-paper-accent-bg/80 text-paper-green"
+              : "text-paper-text/90 hover:bg-paper-surface-muted/80 hover:text-paper-green"
           }`}
         >
           {node.title}
@@ -114,34 +119,41 @@ function MobileTreeNode({
   return (
     <li>
       <div
-        className={`flex w-full items-center justify-between gap-1 rounded-lg px-2.5 ${
-          expanded || isActive ? "bg-paper-white/55" : ""
+        className={`flex w-full items-center justify-between gap-1 rounded-lg px-2 ${
+          expanded || isActive ? "bg-paper-surface-muted/50" : ""
         }`}
       >
-        <Link
-          href={`/products?collection=${node.handle}`}
-          onClick={onNavigate}
-          className={`min-w-0 flex-1 py-2.5 text-left font-medium tracking-wide transition-colors ${textSize} ${
-            isActive
-              ? "text-paper-green"
-              : "text-paper-heading hover:text-paper-green"
-          }`}
-        >
-          {node.title}
-        </Link>
+        {expanded ? (
+          <Link
+            href={`/products?collection=${node.handle}`}
+            onClick={onNavigate}
+            className={titleClass}
+          >
+            {node.title}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className={titleClass}
+            aria-expanded={false}
+          >
+            {node.title}
+          </button>
+        )}
         <button
           type="button"
           aria-expanded={expanded}
           aria-label={`${node.title} — подкатегории`}
           onClick={() => setExpanded((v) => !v)}
-          className={`flex shrink-0 items-center justify-center py-2.5 transition-colors ${
+          className={`flex shrink-0 items-center justify-center py-2 transition-colors ${
             expanded || isActive
               ? "text-paper-green"
-              : "text-paper-heading hover:text-paper-green"
+              : "text-paper-muted hover:text-paper-green"
           }`}
         >
           <ChevronDownIcon
-            className={`h-5 w-5 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
+            className={`h-4 w-4 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
           />
         </button>
       </div>
@@ -203,15 +215,15 @@ function MobileMenuItem({
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded((v) => !v)}
-        className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3.5 text-left text-[17px] font-semibold tracking-wide transition-colors ${
+        className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-left text-[16px] font-medium tracking-normal transition-colors ${
           isActive || expanded
-            ? "bg-paper-accent-bg text-paper-green"
-            : "text-paper-heading hover:bg-paper-surface-muted/70 hover:text-paper-green"
+            ? "bg-paper-accent-bg/70 text-paper-green"
+            : "text-paper-heading hover:bg-paper-surface-muted/60 hover:text-paper-green"
         }`}
       >
         <span>{item.title}</span>
         <ChevronDownIcon
-          className={`h-5 w-5 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -222,10 +234,10 @@ function MobileMenuItem({
               href={item.path}
               prefetch={true}
               onClick={onNavigate}
-              className={`block rounded-lg px-2.5 py-2.5 text-[15px] font-medium transition-colors ${
+              className={`block rounded-lg px-2 py-2 text-[14px] font-normal transition-colors ${
                 current === handle
-                  ? "bg-paper-white/70 text-paper-green"
-                  : "text-paper-muted hover:bg-paper-white/50 hover:text-paper-green"
+                  ? "bg-paper-accent-bg/80 text-paper-green"
+                  : "text-paper-muted hover:bg-paper-surface-muted/70 hover:text-paper-green"
               }`}
             >
               {seeAllLabel}
@@ -357,15 +369,15 @@ export default function MobileMenu({
                           href={item.path}
                           prefetch={true}
                           onClick={closeMobileMenu}
-                          className={`block rounded-xl px-3 py-3.5 text-[17px] font-medium tracking-wide transition-colors ${
+                          className={`block rounded-xl px-3 py-3 text-[16px] font-medium tracking-normal transition-colors ${
                             isActive
                               ? "bg-paper-surface-muted text-paper-green"
-                              : "text-paper-heading hover:bg-paper-surface-muted/70 hover:text-paper-green"
+                              : "text-paper-heading hover:bg-paper-surface-muted/60 hover:text-paper-green"
                           }`}
                         >
                           {item.title}
                           {isActive && (
-                            <span className="mt-1 block h-0.5 w-8 rounded-full bg-paper-green" />
+                            <span className="mt-1 block h-px w-7 rounded-full bg-paper-green/80" />
                           )}
                         </Link>
                       </li>

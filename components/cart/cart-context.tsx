@@ -3,9 +3,16 @@
 import type {
   Cart,
   CartItem,
+  PriceTier,
   Product,
   ProductVariant,
 } from "lib/types";
+import {
+  getEffectiveQuantityPricing,
+  getMinOrderQuantity,
+  normalizePriceTiers,
+  resolveUnitPrice,
+} from "lib/quantity-pricing";
 import React, {
   createContext,
   useContext,
@@ -18,7 +25,11 @@ type UpdateType = "plus" | "minus" | "delete";
 type CartContextType = {
   cart: Cart | null;
   updateCartItem: (itemId: string, updateType: UpdateType) => void;
-  addCartItem: (variant: ProductVariant, product: Product) => void;
+  addCartItem: (
+    variant: ProductVariant,
+    product: Product,
+    quantity?: number,
+  ) => void;
   clearCart: () => void;
   /** Increments when an item is added — use to trigger cart icon animation */
   cartBump: number;
@@ -26,19 +37,50 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+function unitPriceForCartItem(
+  item: Pick<
+    CartItem,
+    "basePrice" | "price" | "priceTiersEnabled" | "priceTiers" | "quantity"
+  >,
+  quantity: number,
+): number | null {
+  const base = item.basePrice ?? item.price;
+  const resolved = resolveUnitPrice(
+    base,
+    {
+      minQuantityEnabled: false,
+      minQuantity: 1,
+      priceTiersEnabled: Boolean(item.priceTiersEnabled),
+      priceTiers: normalizePriceTiers(item.priceTiers || []),
+    },
+    quantity,
+  );
+  return resolved.onInquiry ? null : resolved.unitPrice;
+}
+
 function updateCartItemQuantity(
   item: CartItem,
   updateType: UpdateType,
 ): CartItem | null {
   if (updateType === "delete") return null;
 
-  const newQuantity =
+  const minQty = Math.max(1, item.minQuantity || 1);
+  const nextQuantity =
     updateType === "plus" ? item.quantity + 1 : item.quantity - 1;
-  if (newQuantity === 0) return null;
+
+  if (nextQuantity < minQty) return null;
+
+  const unitPrice = unitPriceForCartItem(item, nextQuantity);
+  if (unitPrice == null) {
+    // Inquiry band — do not allow increasing into it from cart
+    if (updateType === "plus") return item;
+    return null;
+  }
 
   return {
     ...item,
-    quantity: newQuantity,
+    quantity: nextQuantity,
+    price: unitPrice,
   };
 }
 
@@ -46,15 +88,33 @@ function createOrUpdateCartItem(
   existingItem: CartItem | undefined,
   variant: ProductVariant,
   product: Product,
-): CartItem {
-  const quantity = existingItem ? existingItem.quantity + 1 : 1;
+  addQuantity: number,
+): CartItem | null {
+  const selectedVariant =
+    (product.variants || []).find((v) => v.id === variant.id && v.enabled) ||
+    null;
+  const pricing = getEffectiveQuantityPricing(product, selectedVariant);
+  const minQuantity = getMinOrderQuantity(pricing);
+  const quantity = existingItem
+    ? existingItem.quantity + Math.max(1, addQuantity)
+    : Math.max(minQuantity, addQuantity);
+  const basePrice = selectedVariant ? selectedVariant.price : product.price;
+  const resolved = resolveUnitPrice(basePrice, pricing, quantity);
+
+  if (resolved.onInquiry || resolved.unitPrice == null) {
+    return existingItem || null;
+  }
 
   return {
     id: existingItem?.id || `${product.id}-${variant.id}`,
     productId: product.id,
     variantId: variant.id,
     quantity,
-    price: variant.price,
+    price: resolved.unitPrice,
+    minQuantity,
+    basePrice,
+    priceTiersEnabled: pricing.priceTiersEnabled,
+    priceTiers: pricing.priceTiers as PriceTier[],
     product: {
       id: product.id,
       title: product.title,
@@ -68,25 +128,30 @@ function createOrUpdateCartItem(
   };
 }
 
-function updateCartTotals(items: CartItem[]): Pick<Cart, "totalQuantity" | "subtotal" | "total"> {
-  // Filter out any invalid items before calculating totals
-  const validItems = items.filter((item): item is CartItem => 
-    item !== null && 
-    item !== undefined && 
-    typeof item.quantity === 'number' && 
-    typeof item.price === 'number'
+function updateCartTotals(
+  items: CartItem[],
+): Pick<Cart, "totalQuantity" | "subtotal" | "total"> {
+  const validItems = items.filter(
+    (item): item is CartItem =>
+      item !== null &&
+      item !== undefined &&
+      typeof item.quantity === "number" &&
+      typeof item.price === "number",
   );
 
-  const totalQuantity = validItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  const totalQuantity = validItems.reduce(
+    (sum, item) => sum + (item.quantity || 0),
+    0,
+  );
   const subtotal = validItems.reduce(
-    (sum, item) => sum + ((item.price || 0) * (item.quantity || 0)),
+    (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
     0,
   );
 
   return {
     totalQuantity,
     subtotal,
-    total: subtotal, // Add tax/shipping calculation here if needed
+    total: subtotal,
   };
 }
 
@@ -101,53 +166,45 @@ function createEmptyCart(): Cart {
   };
 }
 
-
 const CART_STORAGE_KEY = "ecommerce_cart";
 
 function loadCartFromStorage(): Cart {
   if (typeof window === "undefined") {
-    return {
-      id: undefined,
-      items: [],
-      totalQuantity: 0,
-      subtotal: 0,
-      total: 0,
-      currency: "EUR",
-    };
+    return createEmptyCart();
   }
 
   try {
     const stored = localStorage.getItem(CART_STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      
-      // Validate and filter items
-      const validItems = (parsed.items || []).filter(
-        (item: any): item is CartItem =>
-          item !== null &&
-          item !== undefined &&
-          typeof item.id === 'string' &&
-          typeof item.quantity === 'number' &&
-          typeof item.price === 'number' &&
-          item.quantity > 0
-      );
 
-      // Recalculate totals in case prices changed
-      const totalQuantity = validItems.reduce(
-        (sum: number, item: CartItem) => sum + (item.quantity || 0),
-        0
-      );
-      const subtotal = validItems.reduce(
-        (sum: number, item: CartItem) => sum + ((item.price || 0) * (item.quantity || 0)),
-        0
-      );
-      
+      const validItems = (parsed.items || [])
+        .filter(
+          (item: any): item is CartItem =>
+            item !== null &&
+            item !== undefined &&
+            typeof item.id === "string" &&
+            typeof item.quantity === "number" &&
+            typeof item.price === "number" &&
+            item.quantity > 0,
+        )
+        .map((item: CartItem) => {
+          const minQuantity = Math.max(1, item.minQuantity || 1);
+          const quantity = Math.max(minQuantity, item.quantity);
+          const unitPrice = unitPriceForCartItem(item, quantity);
+          return {
+            ...item,
+            minQuantity,
+            quantity,
+            price: unitPrice ?? item.price,
+            priceTiers: normalizePriceTiers(item.priceTiers || []),
+          };
+        });
+
       return {
         ...parsed,
+        ...updateCartTotals(validItems),
         items: validItems,
-        totalQuantity,
-        subtotal,
-        total: subtotal,
         currency: parsed.currency || "EUR",
       };
     }
@@ -155,14 +212,7 @@ function loadCartFromStorage(): Cart {
     console.error("Error loading cart from localStorage:", error);
   }
 
-  return {
-    id: undefined,
-    items: [],
-    totalQuantity: 0,
-    subtotal: 0,
-    total: 0,
-    currency: "EUR",
-  };
+  return createEmptyCart();
 }
 
 function saveCartToStorage(cart: Cart | null) {
@@ -179,21 +229,14 @@ function saveCartToStorage(cart: Cart | null) {
   }
 }
 
-export function CartProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [cartBump, setCartBump] = useState(0);
 
-  // Load cart from localStorage on mount
   useEffect(() => {
-    const loadedCart = loadCartFromStorage();
-    setCart(loadedCart);
+    setCart(loadCartFromStorage());
   }, []);
 
-  // Save to localStorage whenever cart changes
   useEffect(() => {
     if (cart) {
       saveCartToStorage(cart);
@@ -204,16 +247,15 @@ export function CartProvider({
     setCart((currentCart) => {
       if (!currentCart || !currentCart.items) return currentCart;
 
-      // Filter out any invalid items first
       const validItems = currentCart.items.filter(
-        (item): item is CartItem => item !== null && item !== undefined && item.id !== undefined
+        (item): item is CartItem =>
+          item !== null && item !== undefined && item.id !== undefined,
       );
 
       const updatedItems = validItems
         .map((item) => {
           if (item.id === itemId) {
-            const updated = updateCartItemQuantity(item, updateType);
-            return updated; // Can be null if quantity becomes 0 or delete
+            return updateCartItemQuantity(item, updateType);
           }
           return item;
         })
@@ -237,15 +279,19 @@ export function CartProvider({
     });
   };
 
-  const addCartItem = (variant: ProductVariant, product: Product) => {
+  const addCartItem = (
+    variant: ProductVariant,
+    product: Product,
+    quantity = 1,
+  ) => {
     setCart((currentCart) => {
       const cart = currentCart || createEmptyCart();
-      
-      // Filter out any invalid items first
+
       const validItems = (cart.items || []).filter(
-        (item): item is CartItem => item !== null && item !== undefined && item.id !== undefined
+        (item): item is CartItem =>
+          item !== null && item !== undefined && item.id !== undefined,
       );
-      
+
       const existingItem = validItems.find(
         (item) => item.variantId === variant.id,
       );
@@ -253,7 +299,12 @@ export function CartProvider({
         existingItem,
         variant,
         product,
+        quantity,
       );
+
+      if (!updatedItem) {
+        return cart;
+      }
 
       const updatedItems = existingItem
         ? validItems.map((item) =>
@@ -272,7 +323,6 @@ export function CartProvider({
 
   const clearCart = () => {
     setCart(null);
-    // Also clear from localStorage
     if (typeof window !== "undefined") {
       localStorage.removeItem(CART_STORAGE_KEY);
     }

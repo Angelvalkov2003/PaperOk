@@ -7,6 +7,10 @@ import {
   type CategoryWithAvailability,
 } from "lib/category-visibility";
 import { isProductPlantable } from "lib/product-plantable";
+import {
+  normalizePriceTiers,
+  normalizeProductSizeVariant,
+} from "lib/quantity-pricing";
 import { compareByPosition } from "lib/sort-position";
 import { cache } from "react";
 import { createServiceClient } from "./service";
@@ -352,7 +356,7 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
   }
 });
 
-export async function getCollections(): Promise<Collection[]> {
+export const getCollections = cache(async (): Promise<Collection[]> => {
   try {
     const supabase = createServiceClient();
     
@@ -388,19 +392,19 @@ export async function getCollections(): Promise<Collection[]> {
     console.error("Error in getCollections:", error);
     return [];
   }
-}
+});
 
 /**
  * Storefront categories — only active categories with active ancestors.
  */
-export async function getStorefrontCollections(): Promise<Collection[]> {
+export const getStorefrontCollections = cache(async (): Promise<Collection[]> => {
   const all = await getCollections();
   const flat = toFlatCategories(all);
   const visibleIds = new Set(
     filterStorefrontCategories(flat).map((c) => c.id),
   );
   return all.filter((c) => visibleIds.has(c.id));
-}
+});
 
 export async function getStorefrontCollectionByHandle(
   handle: string,
@@ -432,7 +436,11 @@ export async function getCollectionProducts(handle: string): Promise<Product[]> 
 }
 
 function transformProduct(data: any): Product {
-  const variants = Array.isArray(data.variants) ? data.variants : [];
+  const variants = Array.isArray(data.variants)
+    ? data.variants.map((v: Record<string, unknown>) =>
+        normalizeProductSizeVariant(v),
+      )
+    : [];
   return {
     id: data.id,
     handle: data.handle,
@@ -456,5 +464,9 @@ function transformProduct(data: any): Product {
     updatedAt: data.updated_at,
     available: data.available !== false,
     position: Number(data.position) || 0,
+    minQuantityEnabled: Boolean(data.min_quantity_enabled),
+    minQuantity: Math.max(1, Math.floor(Number(data.min_quantity) || 1)),
+    priceTiersEnabled: Boolean(data.price_tiers_enabled),
+    priceTiers: normalizePriceTiers(data.price_tiers || []),
   };
 }

@@ -53,20 +53,33 @@ function CategoryTreeItem({
     }
   }, [forcedOpenIds, node.id, isActive, isAncestor]);
 
-  const link = (
-    <Link
-      href={`/products?collection=${node.handle}`}
-      className={clsx(
-        "paper-cat-link",
-        depth === 0 && "paper-cat-link-root",
-        isActive && "is-active",
-        isAncestor && "is-ancestor",
-      )}
-      aria-current={isActive ? "page" : undefined}
-    >
-      <span className="paper-cat-link-text">{node.title}</span>
-    </Link>
+  const linkClass = clsx(
+    "paper-cat-link",
+    depth === 0 && "paper-cat-link-root",
+    isActive && "is-active",
+    isAncestor && "is-ancestor",
   );
+
+  /** Collapsed parent: expand. Expanded (or leaf): go to collection. */
+  const titleControl =
+    hasChildren && !open ? (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={linkClass}
+        aria-expanded={false}
+      >
+        <span className="paper-cat-link-text">{node.title}</span>
+      </button>
+    ) : (
+      <Link
+        href={`/products?collection=${node.handle}`}
+        className={linkClass}
+        aria-current={isActive ? "page" : undefined}
+      >
+        <span className="paper-cat-link-text">{node.title}</span>
+      </Link>
+    );
 
   return (
     <li
@@ -95,7 +108,7 @@ function CategoryTreeItem({
         ) : (
           <span className="paper-cat-leaf-dot" aria-hidden />
         )}
-        {link}
+        {titleControl}
       </div>
 
       {hasChildren && open && (

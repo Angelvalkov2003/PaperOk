@@ -1,4 +1,5 @@
 import { getAllContactInquiries } from "lib/supabase/admin-contact-inquiries";
+import { formatDateTimeBg } from "lib/utils";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -90,7 +91,7 @@ export default async function AdminInquiriesPage() {
                     }
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(inquiry.created_at).toLocaleString("bg-BG")}
+                      {formatDateTimeBg(inquiry.created_at)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span

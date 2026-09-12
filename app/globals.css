@@ -3,6 +3,16 @@
 @plugin "@tailwindcss/container-queries";
 @plugin "@tailwindcss/typography";
 
+/* Hide scrollbars while keeping overflow scroll/swipe */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 :root {
   --paper-bg: #F8F5EC;
   --paper-section: #E7EBD8;
@@ -270,69 +280,74 @@ button {
 }
 
 .animate-fade-in-up {
-  animation: fade-in-up 1.05s cubic-bezier(0.33, 1, 0.68, 1) both;
+  animation: fade-in-up 0.55s cubic-bezier(0.33, 1, 0.68, 1) both;
 }
 
 .animate-fade-in-right {
-  animation: fade-in-right 1.15s cubic-bezier(0.33, 1, 0.68, 1) 0.12s both;
+  animation: fade-in-right 0.6s cubic-bezier(0.33, 1, 0.68, 1) 0.08s both;
 }
 
 .animate-fade-in {
-  animation: fade-in 0.95s cubic-bezier(0.33, 1, 0.68, 1) both;
+  animation: fade-in 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
 }
 
 .animate-fadeIn {
-  animation: fade-in-up 0.95s cubic-bezier(0.33, 1, 0.68, 1) both;
+  animation: fade-in-up 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
 }
 
 .animate-delay-100 {
-  animation-delay: 0.12s;
+  animation-delay: 0.08s;
 }
 
 .animate-delay-200 {
-  animation-delay: 0.22s;
+  animation-delay: 0.14s;
 }
 
 .animate-delay-300 {
-  animation-delay: 0.32s;
+  animation-delay: 0.2s;
 }
 
 .animate-delay-400 {
-  animation-delay: 0.42s;
+  animation-delay: 0.26s;
 }
 
 /* Scroll reveal (driven by Reveal component) */
 .reveal {
   opacity: 0;
   transition:
-    opacity 1.05s cubic-bezier(0.33, 1, 0.68, 1),
-    transform 1.05s cubic-bezier(0.33, 1, 0.68, 1);
-  will-change: opacity, transform;
+    opacity 0.55s cubic-bezier(0.33, 1, 0.68, 1),
+    transform 0.55s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .reveal-up {
-  transform: translateY(12px);
+  transform: translateY(10px);
+  will-change: opacity, transform;
 }
 
 .reveal-left {
-  transform: translateX(-12px);
+  transform: translateX(-10px);
+  will-change: opacity, transform;
 }
 
 .reveal-right {
-  transform: translateX(12px);
+  transform: translateX(10px);
+  will-change: opacity, transform;
 }
 
 .reveal-scale {
   transform: scale(0.985);
+  will-change: opacity, transform;
 }
 
 .reveal-fade {
   transform: none;
+  will-change: opacity;
 }
 
 .reveal-visible {
   opacity: 1;
   transform: none;
+  will-change: auto;
 }
 
 .hover-lift {
@@ -355,7 +370,7 @@ button {
 }
 
 .img-zoom {
-  transition: transform 0.9s cubic-bezier(0.33, 1, 0.68, 1);
+  transition: transform 0.45s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .group:hover .img-zoom {
@@ -556,6 +571,15 @@ button {
     box-shadow 0.15s ease;
 }
 
+button.paper-cat-link {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
 .paper-cat-link-text {
   display: -webkit-box;
   overflow: hidden;
@@ -593,27 +617,32 @@ button {
   color: white;
 }
 
-/* Nested branch with vertical trunk + horizontal elbows */
+/* Nested branch — soft plant stem + leaf elbows */
 .paper-cat-branch {
   position: relative;
-  margin: 0.1rem 0 0.25rem 0.7rem;
-  padding-left: 0.85rem;
+  margin: 0.15rem 0 0.3rem 0.7rem;
+  padding-left: 0.95rem;
 }
 
 .paper-cat-branch::before {
   content: "";
   position: absolute;
-  top: 0;
-  /* Stop just under the last child's elbow */
-  bottom: 0.55rem;
+  top: 0.1rem;
+  bottom: 0.45rem;
   left: 0;
-  width: 1.5px;
-  border-radius: 1px;
+  width: 2.5px;
+  border-radius: 40% 999px 55% 999px;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--paper-green) 40%, var(--paper-border)) 0%,
-    color-mix(in srgb, var(--paper-border) 85%, transparent) 100%
+    color-mix(in srgb, var(--paper-green) 92%, #b7c98a) 0%,
+    var(--paper-green) 42%,
+    color-mix(in srgb, var(--paper-green) 70%, #9aaf6a) 78%,
+    color-mix(in srgb, var(--paper-green) 45%, var(--paper-border)) 100%
   );
+  box-shadow:
+    1px 0 0 color-mix(in srgb, var(--paper-green) 28%, transparent),
+    -0.5px 0 0 color-mix(in srgb, var(--paper-green) 18%, transparent);
+  opacity: 0.92;
 }
 
 .paper-cat-node-nested {
@@ -623,12 +652,31 @@ button {
 .paper-cat-node-nested::before {
   content: "";
   position: absolute;
-  top: 0.85rem;
-  left: -0.85rem;
-  width: 0.7rem;
-  height: 1.5px;
-  border-radius: 1px;
-  background-color: color-mix(in srgb, var(--paper-green) 32%, var(--paper-border));
+  top: 0.82rem;
+  left: -0.95rem;
+  width: 0.78rem;
+  height: 2px;
+  border-radius: 999px 2px 999px 2px;
+  background: linear-gradient(
+    90deg,
+    var(--paper-green) 0%,
+    color-mix(in srgb, var(--paper-green) 75%, #a8c070) 70%,
+    color-mix(in srgb, var(--paper-green) 40%, transparent) 100%
+  );
+  opacity: 0.9;
+}
+
+.paper-cat-node-nested::after {
+  content: "";
+  position: absolute;
+  top: 0.68rem;
+  left: -0.28rem;
+  width: 0.34rem;
+  height: 0.34rem;
+  border-radius: 60% 40% 55% 45%;
+  background: color-mix(in srgb, var(--paper-green) 55%, #c5d89a);
+  opacity: 0.55;
+  transform: rotate(-18deg);
 }
 
 @media (max-width: 639px) {
@@ -647,12 +695,94 @@ button {
   }
 
   .paper-cat-branch {
-    margin-left: 0.45rem;
-    padding-left: 0.65rem;
+    margin-left: 0.5rem;
+    padding-left: 0.75rem;
+  }
+
+  .paper-cat-branch::before {
+    width: 2.75px;
+    opacity: 1;
   }
 
   .paper-cat-node-nested::before {
-    left: -0.65rem;
-    width: 0.55rem;
+    left: -0.75rem;
+    width: 0.62rem;
+    height: 2.25px;
   }
+
+  .paper-cat-node-nested::after {
+    left: -0.22rem;
+  }
+}
+
+/* Mobile hamburger menu — plant stem nest rails */
+.mobile-plant-nest {
+  position: relative;
+  margin-top: 0.35rem;
+  margin-left: 0.2rem;
+  list-style: none;
+  padding: 0.15rem 0 0.2rem 0.95rem;
+}
+
+.mobile-plant-nest::before {
+  content: "";
+  position: absolute;
+  top: 0.2rem;
+  bottom: 0.35rem;
+  left: 0.15rem;
+  width: 2.75px;
+  border-radius: 45% 999px 50% 999px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--paper-green) 95%, #c5d89a) 0%,
+    var(--paper-green) 38%,
+    color-mix(in srgb, var(--paper-green) 72%, #9aaf6a) 72%,
+    color-mix(in srgb, var(--paper-green) 50%, var(--paper-border)) 100%
+  );
+  box-shadow:
+    1px 0 0 color-mix(in srgb, var(--paper-green) 30%, transparent),
+    -0.5px 0 0 color-mix(in srgb, var(--paper-green) 20%, transparent);
+}
+
+.mobile-plant-nest--1::before {
+  width: 2.35px;
+  opacity: 0.9;
+}
+
+.mobile-plant-nest--2::before {
+  width: 2px;
+  opacity: 0.8;
+}
+
+.mobile-plant-nest > li {
+  position: relative;
+}
+
+.mobile-plant-nest > li::before {
+  content: "";
+  position: absolute;
+  top: 1.05rem;
+  left: -0.8rem;
+  width: 0.65rem;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--paper-green),
+    color-mix(in srgb, var(--paper-green) 55%, transparent)
+  );
+  opacity: 0.85;
+}
+
+.mobile-plant-nest > li::after {
+  content: "";
+  position: absolute;
+  top: 0.9rem;
+  left: -0.28rem;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 60% 40% 50% 45%;
+  background: color-mix(in srgb, var(--paper-green) 50%, #c5d89a);
+  opacity: 0.5;
+  transform: rotate(-12deg);
 }

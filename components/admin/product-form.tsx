@@ -5,14 +5,22 @@ import { useRouter } from "next/navigation";
 import { createProductAction, updateProductAction } from "app/admin/products/actions";
 import { toast } from "sonner";
 import type { Image, ProductSizeVariant } from "lib/types";
+import { AdminPriceInput, parseAdminPrice } from "./admin-price-input";
 import { ImageUploadButton } from "./image-upload-button";
 import { FieldHint } from "./field-hint";
 import { ProductVariantsEditor } from "./product-variants-editor";
+import { QuantityPricingEditor } from "./quantity-pricing-editor";
 import { VisibilityStatusBadge } from "./visibility-status-badge";
 import {
   getProductCategoryGroups,
   type FlatCategory,
 } from "lib/category-tree";
+import {
+  emptyQuantityPricing,
+  normalizeProductSizeVariant,
+  normalizeQuantityPricing,
+} from "lib/quantity-pricing";
+import type { QuantityPricing } from "lib/types";
 import { formatHandle, generateHandleFromTitle } from "lib/slug";
 import { uploadImageFile } from "lib/upload-image";
 import { IMAGE_FILE_ACCEPT } from "lib/image-file";
@@ -30,6 +38,7 @@ interface ProductFormData {
   position: string;
   images: Image[];
   variants: ProductSizeVariant[];
+  quantityPricing: QuantityPricing;
 }
 
 interface ProductFormProps {
@@ -66,10 +75,21 @@ export function ProductForm({ product, collections }: ProductFormProps) {
     images: Array.isArray(product?.images)
       ? product.images.filter((img: Image) => img && img.url)
       : [],
-    variants: Array.isArray(product?.variants) ? product.variants : [],
+    variants: Array.isArray(product?.variants)
+      ? product.variants.map((v: ProductSizeVariant) =>
+          normalizeProductSizeVariant(v),
+        )
+      : [],
+    quantityPricing: normalizeQuantityPricing({
+      minQuantityEnabled: product?.min_quantity_enabled,
+      minQuantity: product?.min_quantity,
+      priceTiersEnabled: product?.price_tiers_enabled,
+      priceTiers: product?.price_tiers,
+    }),
   }));
 
   const categoryGroups = getProductCategoryGroups(collections);
+  const hasEnabledVariants = formData.variants.some((v) => v.enabled);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,19 +113,29 @@ export function ProductForm({ product, collections }: ProductFormProps) {
       // Generate handle from title if not provided, and trim to remove any spaces
       const finalHandle = (formData.handle.trim() || generateHandleFromTitle(formData.title)).trim();
 
+      const pricing = hasEnabledVariants
+        ? emptyQuantityPricing()
+        : formData.quantityPricing;
+
       const productData = {
         handle: finalHandle,
         title: formData.title,
         description: formData.description || undefined,
-        price: parseFloat(formData.price),
-        compare_at_price: formData.compare_at_price ? parseFloat(formData.compare_at_price) : undefined,
+        price: parseAdminPrice(formData.price) ?? 0,
+        compare_at_price: formData.compare_at_price
+          ? parseAdminPrice(formData.compare_at_price) ?? undefined
+          : undefined,
         featured_image: featuredImage,
         images: imagesWithAltText,
         category: formData.category || undefined,
         available: formData.available,
         plantable: formData.plantable,
         position: parseInt(formData.position) || 0,
-        variants: formData.variants,
+        variants: formData.variants.map((v) => normalizeProductSizeVariant(v)),
+        min_quantity_enabled: pricing.minQuantityEnabled,
+        min_quantity: pricing.minQuantity,
+        price_tiers_enabled: pricing.priceTiersEnabled,
+        price_tiers: pricing.priceTiers,
       };
 
       let result;
@@ -343,12 +373,11 @@ export function ProductForm({ product, collections }: ProductFormProps) {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Цена *
           </label>
-          <input
-            type="number"
-            step="0.01"
+          <AdminPriceInput
+            mode="string"
             required
             value={formData.price}
-            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+            onValueChange={(price) => setFormData({ ...formData, price })}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
         </div>
@@ -357,11 +386,12 @@ export function ProductForm({ product, collections }: ProductFormProps) {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Стара Цена
           </label>
-          <input
-            type="number"
-            step="0.01"
+          <AdminPriceInput
+            mode="string"
             value={formData.compare_at_price}
-            onChange={(e) => setFormData({ ...formData, compare_at_price: e.target.value })}
+            onValueChange={(compare_at_price) =>
+              setFormData({ ...formData, compare_at_price })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
         </div>
@@ -417,6 +447,22 @@ export function ProductForm({ product, collections }: ProductFormProps) {
         basePrice={formData.price}
         onChange={(variants) => setFormData({ ...formData, variants })}
       />
+
+      {!hasEnabledVariants && (
+        <QuantityPricingEditor
+          value={formData.quantityPricing}
+          onChange={(quantityPricing) =>
+            setFormData({ ...formData, quantityPricing })
+          }
+        />
+      )}
+
+      {hasEnabledVariants && (
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          При активни размери минималното количество и ценовите диапазони се
+          задават отделно за всеки размер по-горе.
+        </p>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

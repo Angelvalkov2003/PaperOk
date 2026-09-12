@@ -60,6 +60,10 @@ CREATE TABLE products (
     available        BOOLEAN NOT NULL DEFAULT false,
     plantable        BOOLEAN NOT NULL DEFAULT true,
     position         INTEGER NOT NULL DEFAULT 0,
+    min_quantity_enabled BOOLEAN NOT NULL DEFAULT false,
+    min_quantity     INTEGER NOT NULL DEFAULT 1 CHECK (min_quantity >= 1),
+    price_tiers_enabled BOOLEAN NOT NULL DEFAULT false,
+    price_tiers      JSONB NOT NULL DEFAULT '[]',
     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -71,9 +75,13 @@ CREATE INDEX idx_products_position  ON products(position);
 
 COMMENT ON TABLE  products           IS 'Store products. Images in images[] JSONB. Sizes in variants JSONB.';
 COMMENT ON COLUMN products.category  IS 'Collection handle this product belongs to.';
-COMMENT ON COLUMN products.variants  IS 'Size variants: [{id, name, price, description, enabled}]. Empty = use base price.';
+COMMENT ON COLUMN products.variants  IS 'Size variants: [{id, name, price, description, enabled, minQuantityEnabled, minQuantity, priceTiersEnabled, priceTiers}]. Empty = use base price + product-level quantity pricing.';
 COMMENT ON COLUMN products.plantable IS 'When true, show planting tab and plantable badge on the product page.';
 COMMENT ON COLUMN products.images    IS 'Gallery images as JSONB array. Order = display order.';
+COMMENT ON COLUMN products.min_quantity_enabled IS 'Product-level MOQ toggle (used when no enabled size variants).';
+COMMENT ON COLUMN products.min_quantity IS 'Product-level minimum order quantity when enabled.';
+COMMENT ON COLUMN products.price_tiers_enabled IS 'Product-level quantity price tiers toggle.';
+COMMENT ON COLUMN products.price_tiers IS '[{id, minQty, maxQty|null, price|null}]; null price = on inquiry.';
 
 -- =============================================================================
 -- 3. PRODUCT_IMAGES (optional legacy)

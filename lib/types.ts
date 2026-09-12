@@ -8,12 +8,31 @@ export type Image = {
   height?: number;
 };
 
+/** Quantity price band. `maxQty: null` = open-ended; `price: null` = on inquiry. */
+export type PriceTier = {
+  id: string;
+  minQty: number;
+  maxQty: number | null;
+  price: number | null;
+};
+
+export type QuantityPricing = {
+  minQuantityEnabled: boolean;
+  minQuantity: number;
+  priceTiersEnabled: boolean;
+  priceTiers: PriceTier[];
+};
+
 export type ProductSizeVariant = {
   id: string;
   name: string;
   price: number;
   description?: string;
   enabled: boolean;
+  minQuantityEnabled?: boolean;
+  minQuantity?: number;
+  priceTiersEnabled?: boolean;
+  priceTiers?: PriceTier[];
 };
 
 export type ProductVariant = {
@@ -45,6 +64,11 @@ export type Product = {
   available: boolean;
   /** Lower number appears first in listings. */
   position: number;
+  /** Product-level MOQ/tiers (used when there are no enabled size variants). */
+  minQuantityEnabled?: boolean;
+  minQuantity?: number;
+  priceTiersEnabled?: boolean;
+  priceTiers?: PriceTier[];
 };
 
 export type CartItem = {
@@ -53,6 +77,12 @@ export type CartItem = {
   variantId: string;
   quantity: number;
   price: number;
+  /** Floor for qty controls; defaults to 1 when missing (legacy carts). */
+  minQuantity?: number;
+  /** Base unit price when no tier applies. */
+  basePrice?: number;
+  priceTiersEnabled?: boolean;
+  priceTiers?: PriceTier[];
   product: {
     id: string;
     title: string;

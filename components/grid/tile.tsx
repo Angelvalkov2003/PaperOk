@@ -1,3 +1,5 @@
+"use client";
+
 import clsx from "clsx";
 import Image from "next/image";
 import { memo } from "react";
@@ -7,6 +9,8 @@ export const GridTileImage = memo(function GridTileImage({
   isInteractive = true,
   active,
   label,
+  className,
+  unoptimized,
   ...props
 }: {
   isInteractive?: boolean;
@@ -26,9 +30,8 @@ export const GridTileImage = memo(function GridTileImage({
   return (
     <div
       className={clsx(
-        "group flex h-full w-full items-center justify-center overflow-hidden rounded-lg border bg-paper-bg hover:border-paper-border",
+        "group relative flex h-full w-full items-center justify-center overflow-hidden rounded-lg border bg-paper-bg hover:border-paper-border",
         {
-          relative: label,
           "border-2 border-paper-border": active,
           "border-paper-border": !active,
         },
@@ -36,12 +39,14 @@ export const GridTileImage = memo(function GridTileImage({
     >
       {props.src ? (
         <Image
-          className={clsx("relative h-full w-full object-contain", {
-            "transition duration-300 ease-in-out group-hover:scale-105":
-              isInteractive,
-          })}
-          unoptimized={isLocalPlaceholder || props.unoptimized}
           {...props}
+          unoptimized={isLocalPlaceholder || unoptimized}
+          className={clsx(
+            "relative h-full w-full object-contain",
+            isInteractive &&
+              "transition duration-300 ease-in-out group-hover:scale-105",
+            className,
+          )}
         />
       ) : null}
       {label ? (

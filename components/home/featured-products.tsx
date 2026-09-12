@@ -1,6 +1,5 @@
 import Grid from "components/grid";
 import ProductGridItems from "components/layout/product-grid-items";
-import { Reveal } from "components/ui/reveal";
 import { getProducts } from "lib/supabase/products";
 import Link from "next/link";
 import { Section } from "./section";
@@ -12,16 +11,14 @@ export async function FeaturedProducts() {
 
   return (
     <Section title="Любими продукти" variant="muted">
-      <Reveal variant="fade">
-        <Grid className="grid-cols-2 lg:grid-cols-4">
-          <ProductGridItems products={products} />
-        </Grid>
-      </Reveal>
-      <Reveal className="mt-10 text-center" delay={150}>
+      <Grid className="grid-cols-2 lg:grid-cols-4">
+        <ProductGridItems products={products} eager />
+      </Grid>
+      <div className="mt-10 text-center">
         <Link href="/products" className="btn-outline px-8 py-3">
           Виж всички продукти
         </Link>
-      </Reveal>
+      </div>
     </Section>
   );
 }

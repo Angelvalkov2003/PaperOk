@@ -24,7 +24,7 @@ export function PaperTexture({
   imageClassName,
   priority = false,
   sizes = "100vw",
-  quality = 90,
+  quality = 75,
 }: PaperTextureProps) {
   return (
     <div

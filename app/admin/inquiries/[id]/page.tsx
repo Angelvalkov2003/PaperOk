@@ -6,6 +6,7 @@ import {
 } from "lib/supabase/admin-contact-inquiries";
 import { InquiryStatusForm } from "components/admin/inquiry-status-form";
 import { DeleteInquiryButton } from "components/admin/delete-inquiry-button";
+import { formatDateTimeBg } from "lib/utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -48,7 +49,7 @@ export default async function AdminInquiryDetailPage({
             Запитване от {inquiry.name}
           </h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            {new Date(inquiry.created_at).toLocaleString("bg-BG")}
+            {formatDateTimeBg(inquiry.created_at, { month: "long", second: "2-digit" })}
           </p>
         </div>
         <DeleteInquiryButton

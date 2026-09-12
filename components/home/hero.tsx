@@ -10,9 +10,8 @@ export function Hero() {
       <PaperTexture
         src={PAPER_BACKGROUNDS.petals}
         overlay={PAPER_OVERLAYS.hero}
-        priority
         sizes="100vw"
-        quality={92}
+        quality={75}
       />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(221,232,204,0.35),_transparent_55%),radial-gradient(ellipse_at_bottom_left,_rgba(239,231,219,0.4),_transparent_50%)]" />
       <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:py-28">
@@ -47,7 +46,7 @@ export function Hero() {
               fill
               priority
               sizes="(min-width: 1024px) 50vw, 100vw"
-              className="object-cover transition-transform duration-[1.6s] ease-[cubic-bezier(0.33,1,0.68,1)] hover:scale-[1.02]"
+              className="object-cover"
             />
           </div>
         </div>

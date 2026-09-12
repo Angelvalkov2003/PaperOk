@@ -13,6 +13,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { OrderEditForm } from "components/admin/order-edit-form";
 import Image from "next/image";
+import { formatDateTimeBg } from "lib/utils";
 
 // Disable static generation for this page - always fetch fresh data
 export const dynamic = "force-dynamic";
@@ -68,23 +69,15 @@ export default async function OrderDetailPage({
         <div className="mt-2 space-y-1">
           <p className="text-gray-600 dark:text-gray-400">
             <span className="font-medium">Направена на:</span>{" "}
-            {new Date(order.created_at).toLocaleDateString("bg-BG", {
-              year: "numeric",
+            {formatDateTimeBg(order.created_at, {
               month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
             })}
           </p>
           {order.updated_at && order.updated_at !== order.created_at && (
             <p className="text-gray-600 dark:text-gray-400">
               <span className="font-medium">Промяна по поръчката от админ на:</span>{" "}
-              {new Date(order.updated_at).toLocaleDateString("bg-BG", {
-                year: "numeric",
+              {formatDateTimeBg(order.updated_at, {
                 month: "long",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
               })}
             </p>
           )}
@@ -183,7 +176,7 @@ export default async function OrderDetailPage({
                   {order.shipping_deadline ? (
                     <p>
                       Ориентировъчен срок:{" "}
-                      {new Date(order.shipping_deadline).toLocaleString("bg-BG")}
+                      {formatDateTimeBg(order.shipping_deadline)}
                     </p>
                   ) : null}
                 </div>

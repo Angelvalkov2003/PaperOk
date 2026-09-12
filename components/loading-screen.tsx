@@ -1,6 +1,4 @@
 import Image from "next/image";
-import { PaperTexture } from "components/ui/paper-texture";
-import { PAPER_BACKGROUNDS, PAPER_OVERLAYS } from "lib/backgrounds";
 import {
   LOGO_TRANSPARENT,
   LOGO_TRANSPARENT_SIZE,
@@ -8,8 +6,8 @@ import {
 } from "lib/constants";
 
 /**
- * Soft cream loading screen with seed-paper texture and PaperOK logo.
- * Used by route `loading.tsx` files during navigation.
+ * Lightweight cream loading screen with PaperOK logo.
+ * Avoids fetching full-bleed textures during route transitions.
  */
 export default function LoadingScreen() {
   return (
@@ -19,12 +17,9 @@ export default function LoadingScreen() {
       aria-live="polite"
       aria-label="Зареждане"
     >
-      <PaperTexture
-        src={PAPER_BACKGROUNDS.petals}
-        overlay={PAPER_OVERLAYS.cream}
-        sizes="100vw"
-        quality={85}
-        priority
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(221,232,204,0.45),_transparent_55%),radial-gradient(ellipse_at_bottom,_rgba(239,231,219,0.5),_transparent_50%)]"
+        aria-hidden
       />
       <div className="relative z-10 flex flex-col items-center">
         <Image

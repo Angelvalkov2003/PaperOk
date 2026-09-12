@@ -1,5 +1,6 @@
 import { getProductByIdForAdmin } from "lib/supabase/admin-products";
 import { getAllCollectionsForAdmin } from "lib/supabase/admin-collections";
+import { normalizeProductSizeVariant } from "lib/quantity-pricing";
 import { ProductForm } from "components/admin/product-form";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -42,10 +43,18 @@ export default async function EditProductPage({
     images: Array.isArray(product.images)
       ? product.images.filter(Boolean)
       : [],
-    variants: Array.isArray(product.variants) ? product.variants : [],
+    variants: Array.isArray(product.variants)
+      ? product.variants.map((v: any) => normalizeProductSizeVariant(v))
+      : [],
     available: product.available !== false,
     plantable: product.plantable !== false,
     position: product.position ?? 0,
+    min_quantity_enabled: Boolean(product.min_quantity_enabled),
+    min_quantity: Math.max(1, Math.floor(Number(product.min_quantity) || 1)),
+    price_tiers_enabled: Boolean(product.price_tiers_enabled),
+    price_tiers: Array.isArray(product.price_tiers)
+      ? product.price_tiers
+      : [],
   };
 
   return (

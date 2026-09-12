@@ -5,13 +5,14 @@ import { BackButton } from "components/product/back-button";
 import { ProductDescription } from "components/product/product-description";
 import { ProductTabs } from "components/product/product-tabs";
 import { PaperTexture } from "components/ui/paper-texture";
-import { PAPER_BACKGROUNDS, PAPER_OVERLAYS } from "lib/backgrounds";
+import { PAPER_BACKGROUNDS } from "lib/backgrounds";
 import { getProduct, getProducts } from "lib/supabase/products";
 import type { Image } from "lib/types";
 import { baseUrl } from "lib/utils";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 export async function generateMetadata(props: {
   params: Promise<{ handle: string }>;
@@ -121,13 +122,12 @@ export default async function ProductPage(props: {
         }}
       />
       <div className="relative min-h-screen overflow-hidden bg-paper-bg">
-        <PaperTexture
-          src={PAPER_BACKGROUNDS.petalsSoft}
-          overlay={PAPER_OVERLAYS.cream}
-          sizes="100vw"
-          quality={88}
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(221,232,204,0.35),_transparent_55%),radial-gradient(ellipse_at_bottom,_rgba(239,231,219,0.4),_transparent_50%)]"
+          aria-hidden
         />
-        <div className="relative z-10 mx-auto max-w-(--breakpoint-2xl) px-4 py-8">
+        <div className="relative z-10 mx-auto max-w-(--breakpoint-2xl) px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <BackButton />
           <div
             className="relative flex flex-col overflow-hidden rounded-[1.35rem] border border-paper-border/70 p-8 md:p-12 lg:flex-row lg:gap-8"
             style={{ boxShadow: "var(--paper-shadow)" }}
@@ -136,10 +136,9 @@ export default async function ProductPage(props: {
               src={PAPER_BACKGROUNDS.petalsSoft}
               overlay="rgba(255, 252, 247, 0.82)"
               sizes="(min-width: 1024px) 90vw, 100vw"
-              quality={86}
+              quality={75}
             />
             <div className="animate-fade-in relative z-10 h-full w-full basis-full lg:basis-4/6">
-              <BackButton />
               <Gallery images={galleryImages} />
             </div>
 
@@ -150,7 +149,9 @@ export default async function ProductPage(props: {
           <div className="animate-fade-in-up animate-delay-200 relative z-10">
             <ProductTabs product={product} />
           </div>
-          <RelatedProducts category={product.category} currentId={product.id} />
+          <Suspense fallback={null}>
+            <RelatedProducts category={product.category} currentId={product.id} />
+          </Suspense>
         </div>
       </div>
       <Footer />
@@ -188,7 +189,7 @@ async function RelatedProducts({
             <Link
               className="relative h-full w-full"
               href={`/product/${product.handle}`}
-              prefetch={true}
+              prefetch={false}
             >
               <GridTileImage
                 alt={product.title}

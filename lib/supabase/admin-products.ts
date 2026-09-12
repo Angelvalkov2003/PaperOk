@@ -1,6 +1,10 @@
 import { createServiceClient } from "./service";
 import { compareByPosition } from "lib/sort-position";
-import type { Image, ProductSizeVariant } from "lib/types";
+import type { Image, PriceTier, ProductSizeVariant } from "lib/types";
+import {
+  normalizePriceTiers,
+  normalizeProductSizeVariant,
+} from "lib/quantity-pricing";
 import {
   ADMIN_PRODUCTS_DEFAULT_PAGE_SIZE,
   ADMIN_PRODUCTS_PAGE_SIZES,
@@ -30,6 +34,10 @@ export interface CreateProductData {
   plantable?: boolean;
   position?: number;
   variants?: ProductSizeVariant[];
+  min_quantity_enabled?: boolean;
+  min_quantity?: number;
+  price_tiers_enabled?: boolean;
+  price_tiers?: PriceTier[];
 }
 
 export interface UpdateProductData extends Partial<CreateProductData> {
@@ -320,7 +328,13 @@ export async function createProduct(data: CreateProductData) {
       available: data.available === true,
       plantable: data.plantable !== false,
       position: data.position ?? 0,
-      variants: data.variants || [],
+      variants: (data.variants || []).map((v) =>
+        normalizeProductSizeVariant(v),
+      ),
+      min_quantity_enabled: Boolean(data.min_quantity_enabled),
+      min_quantity: Math.max(1, Math.floor(Number(data.min_quantity) || 1)),
+      price_tiers_enabled: Boolean(data.price_tiers_enabled),
+      price_tiers: normalizePriceTiers(data.price_tiers || []),
       updated_at: new Date().toISOString(),
     };
 
@@ -330,9 +344,17 @@ export async function createProduct(data: CreateProductData) {
       .select()
       .single();
 
-    // Fallback if plantable column is not migrated yet
-    if (error?.message?.includes("plantable")) {
+    // Fallback if newer columns are not migrated yet
+    if (
+      error?.message?.includes("plantable") ||
+      error?.message?.includes("min_quantity") ||
+      error?.message?.includes("price_tiers")
+    ) {
       delete productData.plantable;
+      delete productData.min_quantity_enabled;
+      delete productData.min_quantity;
+      delete productData.price_tiers_enabled;
+      delete productData.price_tiers;
       ({ data: product, error } = await supabase
         .from("products")
         .insert(productData)
@@ -392,7 +414,26 @@ export async function updateProduct(data: UpdateProductData) {
     if (data.available !== undefined) updateData.available = data.available;
     if (data.plantable !== undefined) updateData.plantable = data.plantable;
     if (data.position !== undefined) updateData.position = data.position;
-    if (data.variants !== undefined) updateData.variants = data.variants || [];
+    if (data.variants !== undefined) {
+      updateData.variants = (data.variants || []).map((v) =>
+        normalizeProductSizeVariant(v),
+      );
+    }
+    if (data.min_quantity_enabled !== undefined) {
+      updateData.min_quantity_enabled = Boolean(data.min_quantity_enabled);
+    }
+    if (data.min_quantity !== undefined) {
+      updateData.min_quantity = Math.max(
+        1,
+        Math.floor(Number(data.min_quantity) || 1),
+      );
+    }
+    if (data.price_tiers_enabled !== undefined) {
+      updateData.price_tiers_enabled = Boolean(data.price_tiers_enabled);
+    }
+    if (data.price_tiers !== undefined) {
+      updateData.price_tiers = normalizePriceTiers(data.price_tiers || []);
+    }
 
     let { data: product, error } = await supabase
       .from("products")
@@ -401,8 +442,16 @@ export async function updateProduct(data: UpdateProductData) {
       .select()
       .single();
 
-    if (error?.message?.includes("plantable")) {
+    if (
+      error?.message?.includes("plantable") ||
+      error?.message?.includes("min_quantity") ||
+      error?.message?.includes("price_tiers")
+    ) {
       delete updateData.plantable;
+      delete updateData.min_quantity_enabled;
+      delete updateData.min_quantity;
+      delete updateData.price_tiers_enabled;
+      delete updateData.price_tiers;
       ({ data: product, error } = await supabase
         .from("products")
         .update(updateData)

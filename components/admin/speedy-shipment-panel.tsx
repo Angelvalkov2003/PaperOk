@@ -4,6 +4,7 @@ import { createSpeedyShipmentAction } from "app/admin/orders/[id]/speedy-actions
 import { SyncSpeedyButton } from "components/admin/sync-speedy-button";
 import type { ShipmentEligibility } from "lib/speedy-order";
 import { useErrorPopup } from "components/error-popup-provider";
+import { formatDateTimeBg } from "lib/utils";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
@@ -79,7 +80,7 @@ export function SpeedyShipmentPanel({
                   Създадена на:
                 </span>
                 <p className="text-gray-900 dark:text-white">
-                  {new Date(createdAt).toLocaleString("bg-BG")}
+                  {formatDateTimeBg(createdAt)}
                 </p>
               </div>
             ) : null}

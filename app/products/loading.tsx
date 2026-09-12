@@ -1,1 +1,1 @@
-export { default } from "components/loading-screen";
+export { default } from "components/products/products-loading";

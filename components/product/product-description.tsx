@@ -1,15 +1,13 @@
 import { AddToCart } from "components/cart/add-to-cart";
 import Price from "components/price";
+import { getCatalogFromPrice } from "lib/quantity-pricing";
 import { Product } from "lib/types";
 import { ProductTrustBadges } from "./product-trust-badges";
 
 export function ProductDescription({ product }: { product: Product }) {
   const enabledVariants = (product.variants || []).filter((v) => v.enabled);
   const showBasePrice = enabledVariants.length === 0;
-  const fromPrice =
-    enabledVariants.length > 0
-      ? Math.min(...enabledVariants.map((v) => v.price))
-      : product.price;
+  const fromPrice = getCatalogFromPrice(product);
 
   return (
     <>
@@ -18,7 +16,8 @@ export function ProductDescription({ product }: { product: Product }) {
         {showBasePrice && (
           <div className="mr-auto w-auto rounded-full bg-paper-section p-2 text-sm text-paper-heading">
             {product.compareAtPrice &&
-            product.compareAtPrice > product.price ? (
+            product.compareAtPrice > product.price &&
+            !product.priceTiersEnabled ? (
               <div className="flex items-center gap-2">
                 <span className="text-red-600 line-through">
                   <Price
@@ -28,6 +27,10 @@ export function ProductDescription({ product }: { product: Product }) {
                 </span>
                 <Price amount={product.price.toString()} currencyCode="EUR" />
               </div>
+            ) : product.priceTiersEnabled ? (
+              <span>
+                от <Price amount={fromPrice.toString()} currencyCode="EUR" />
+              </span>
             ) : (
               <Price amount={product.price.toString()} currencyCode="EUR" />
             )}
