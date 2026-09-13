@@ -7,7 +7,7 @@ import {
   formatPriceTierLabel,
   normalizeQuantityPricing,
 } from "lib/quantity-pricing";
-import { AdminPriceInput } from "./admin-price-input";
+import { AdminIntegerInput, AdminPriceInput } from "./admin-price-input";
 import { FieldHint } from "./field-hint";
 
 type Props = {
@@ -90,15 +90,11 @@ export function QuantityPricingEditor({
           <label className="mb-1 block text-xs text-gray-500">
             Минимум (бр.)
           </label>
-          <input
-            type="number"
+          <AdminIntegerInput
             min={1}
-            step={1}
             value={pricing.minQuantity}
-            onChange={(e) =>
-              setPricing({
-                minQuantity: Math.max(1, parseInt(e.target.value, 10) || 1),
-              })
+            onValueChange={(minQuantity) =>
+              setPricing({ minQuantity: minQuantity ?? 1 })
             }
             className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800"
           />
@@ -135,14 +131,11 @@ export function QuantityPricingEditor({
               >
                 <div className="sm:col-span-2">
                   <label className="mb-1 block text-xs text-gray-500">От</label>
-                  <input
-                    type="number"
+                  <AdminIntegerInput
                     min={1}
                     value={tier.minQty}
-                    onChange={(e) =>
-                      patchTier(index, {
-                        minQty: Math.max(1, parseInt(e.target.value, 10) || 1),
-                      })
+                    onValueChange={(minQty) =>
+                      patchTier(index, { minQty: minQty ?? 1 })
                     }
                     className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800"
                   />
@@ -151,17 +144,19 @@ export function QuantityPricingEditor({
                   <label className="mb-1 block text-xs text-gray-500">
                     До (празно = +)
                   </label>
-                  <input
-                    type="number"
+                  <AdminIntegerInput
                     min={tier.minQty}
-                    value={tier.maxQty ?? ""}
+                    allowEmpty
+                    value={tier.maxQty}
                     placeholder="∞"
-                    onChange={(e) => {
-                      const raw = e.target.value.trim();
+                    onValueChange={(maxQty) =>
                       patchTier(index, {
-                        maxQty: raw === "" ? null : Math.max(tier.minQty, parseInt(raw, 10) || tier.minQty),
-                      });
-                    }}
+                        maxQty:
+                          maxQty == null
+                            ? null
+                            : Math.max(tier.minQty, maxQty),
+                      })
+                    }
                     className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800"
                   />
                 </div>

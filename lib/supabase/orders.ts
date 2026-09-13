@@ -38,7 +38,8 @@ function initialStatuses(paymentMethod: CreateOrderData["payment_method"]): {
   if (paymentMethod === "card") {
     return { status: "new", payment_status: "awaiting_payment" };
   }
-  return { status: "processing", payment_status: "cash_on_delivery" };
+  // Keep "new" until an admin moves the order — dashboard "Нови поръчки" counts status=new.
+  return { status: "new", payment_status: "cash_on_delivery" };
 }
 
 /**
@@ -302,19 +303,22 @@ export async function markPaymentFailed(orderId: string) {
 }
 
 /**
- * COD / bank transfer — notify admin and ensure fulfillment status.
+ * COD / bank transfer — notify admin. Leave fulfillment status as "new"
+ * so it appears under "Нови поръчки" until an admin changes it.
  */
 export async function fulfillCodOrder(orderId: string) {
-  const supabase = createServiceClient();
   const order = await getOrderById(orderId);
 
   let current = order;
 
-  if (order.status === "new") {
+  if (
+    order.payment_method !== "card" &&
+    order.payment_status !== "cash_on_delivery"
+  ) {
+    const supabase = createServiceClient();
     const { data: updated } = await supabase
       .from("orders")
       .update({
-        status: "processing",
         payment_status: "cash_on_delivery",
         updated_at: new Date().toISOString(),
       })

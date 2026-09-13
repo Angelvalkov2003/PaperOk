@@ -429,10 +429,16 @@ export function ProductForm({ product, collections }: ProductFormProps) {
             Позиция
           </label>
           <input
-            type="number"
-            min="0"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
             value={formData.position}
-            onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                position: e.target.value.replace(/\D/g, ""),
+              })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             placeholder="1 = най-отгоре"
           />

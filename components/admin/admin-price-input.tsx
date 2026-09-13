@@ -30,6 +30,18 @@ export function parseAdminPrice(draft: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Digits only while typing (integer qty / position fields). */
+export function sanitizeIntegerInput(raw: string): string {
+  return raw.replace(/\D/g, "");
+}
+
+export function parseAdminInteger(draft: string): number | null {
+  const s = draft.trim();
+  if (!s) return null;
+  const n = Number.parseInt(s, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
 function toDraft(value: number | null | undefined): string {
   if (value == null || Number.isNaN(Number(value))) return "";
   return String(value);
@@ -115,6 +127,68 @@ export function AdminPriceInput(props: AdminPriceInputProps) {
         focusedRef.current = false;
         const parsed = parseAdminPrice(draft);
         const committed = parsed ?? (allowEmpty ? null : 0);
+        onValueChange(committed);
+        setDraft(toDraft(committed));
+        onBlur?.(e);
+      }}
+      className={className}
+    />
+  );
+}
+
+type AdminIntegerInputProps = BaseProps & {
+  value: number | null | undefined;
+  onValueChange: (value: number | null) => void;
+  /** Empty blur commits `null` when true; otherwise `min` (default 1) or 0. */
+  allowEmpty?: boolean;
+  min?: number;
+};
+
+/**
+ * Integer field without spinners. Local draft while focused so clearing/typing
+ * does not force a value or steal focus on each keystroke.
+ */
+export function AdminIntegerInput({
+  value,
+  onValueChange,
+  allowEmpty = false,
+  min = 1,
+  className,
+  onBlur,
+  onFocus,
+  ...rest
+}: AdminIntegerInputProps) {
+  const [draft, setDraft] = useState(() => toDraft(value));
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if (focusedRef.current) return;
+    setDraft(toDraft(value));
+  }, [value]);
+
+  return (
+    <input
+      {...rest}
+      type="text"
+      inputMode="numeric"
+      autoComplete="off"
+      value={draft}
+      onFocus={(e) => {
+        focusedRef.current = true;
+        onFocus?.(e);
+      }}
+      onChange={(e) => {
+        setDraft(sanitizeIntegerInput(e.target.value));
+      }}
+      onBlur={(e) => {
+        focusedRef.current = false;
+        const parsed = parseAdminInteger(draft);
+        let committed: number | null;
+        if (parsed == null) {
+          committed = allowEmpty ? null : min;
+        } else {
+          committed = Math.max(min, parsed);
+        }
         onValueChange(committed);
         setDraft(toDraft(committed));
         onBlur?.(e);

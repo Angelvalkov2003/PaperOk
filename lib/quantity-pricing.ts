@@ -47,8 +47,9 @@ export function normalizePriceTiers(raw: unknown): PriceTier[] {
           : `tier-${index}-${minQty}`;
 
       return { id, minQty, maxQty, price } satisfies PriceTier;
-    })
-    .sort((a, b) => a.minQty - b.minQty);
+    });
+  // Intentionally not sorted here — sorting while typing in admin reorders
+  // rows and steals focus. Sort only when resolving prices.
 }
 
 export function normalizeQuantityPricing(
@@ -120,7 +121,10 @@ export function findPriceTierForQuantity(
   quantity: number,
 ): PriceTier | null {
   const qty = Math.max(1, Math.floor(quantity));
-  for (const tier of normalizePriceTiers(tiers)) {
+  const ordered = [...normalizePriceTiers(tiers)].sort(
+    (a, b) => a.minQty - b.minQty,
+  );
+  for (const tier of ordered) {
     const withinMax = tier.maxQty == null || qty <= tier.maxQty;
     if (qty >= tier.minQty && withinMax) return tier;
   }

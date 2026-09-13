@@ -44,9 +44,6 @@ function ProductsTable({
                 Име
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Handle
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Цена
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -66,7 +63,7 @@ function ProductsTable({
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {products.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={7} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                   {search
                     ? `Няма продукти за „${search}“`
                     : "Няма продукти. Създай първия продукт!"}
@@ -91,11 +88,6 @@ function ProductsTable({
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {product.title}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">
-                      {product.handle}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

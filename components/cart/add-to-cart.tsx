@@ -91,7 +91,7 @@ export function AddToCart({ product }: { product: Product }) {
     useState<ProductSizeVariant | null>(
       hasVariants ? enabledVariants[0]! : null,
     );
-  const [quantity, setQuantity] = useState(1);
+  const [quantityDraft, setQuantityDraft] = useState("1");
   const [buttonState, setButtonState] = useState<ButtonState>("idle");
 
   const pricing = useMemo(
@@ -99,13 +99,19 @@ export function AddToCart({ product }: { product: Product }) {
     [product, selectedVariant],
   );
   const minQty = getMinOrderQuantity(pricing);
+  const parsedQty = Number.parseInt(quantityDraft, 10);
+  const hasValidQty = Number.isFinite(parsedQty) && parsedQty > 0;
+  const belowMin = hasValidQty && parsedQty < minQty;
+  const quantity = hasValidQty ? parsedQty : minQty;
+
   const basePrice = selectedVariant ? selectedVariant.price : product.price;
   const resolved = resolveUnitPrice(basePrice, pricing, quantity);
   const displayPrice = resolved.unitPrice ?? basePrice;
   const onInquiry = resolved.onInquiry;
+  const canAdd = hasValidQty && !belowMin && !onInquiry;
 
   useEffect(() => {
-    setQuantity(minQty);
+    setQuantityDraft(String(minQty));
   }, [selectedVariant?.id, minQty]);
 
   const { addCartItem } = useCart();
@@ -122,7 +128,11 @@ export function AddToCart({ product }: { product: Product }) {
   };
 
   const bumpQuantity = (delta: number) => {
-    setQuantity((prev) => Math.max(minQty, prev + delta));
+    setQuantityDraft((prev) => {
+      const current = Number.parseInt(prev, 10);
+      const base = Number.isFinite(current) ? current : minQty;
+      return String(Math.max(minQty, base + delta));
+    });
   };
 
   return (
@@ -159,28 +169,35 @@ export function AddToCart({ product }: { product: Product }) {
 
       <div>
         <label className="mb-2 block text-sm font-medium">Количество</label>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center rounded-full border border-paper-border">
             <button
               type="button"
               aria-label="Намали количество"
-              disabled={quantity <= minQty || buttonState !== "idle"}
+              disabled={
+                !hasValidQty || quantity <= minQty || buttonState !== "idle"
+              }
               onClick={() => bumpQuantity(-1)}
               className="flex h-10 w-10 items-center justify-center rounded-l-full disabled:opacity-40"
             >
               <MinusIcon className="h-4 w-4" />
             </button>
             <input
-              type="number"
-              min={minQty}
-              value={quantity}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={quantityDraft}
               disabled={buttonState !== "idle"}
               onChange={(e) => {
-                const next = parseInt(e.target.value, 10);
-                if (!Number.isFinite(next)) return;
-                setQuantity(Math.max(minQty, next));
+                setQuantityDraft(e.target.value.replace(/\D/g, ""));
               }}
-              className="h-10 w-16 border-x border-paper-border bg-transparent text-center text-sm outline-none"
+              onBlur={() => {
+                if (!quantityDraft.trim()) {
+                  setQuantityDraft(String(minQty));
+                }
+              }}
+              className="h-10 w-16 border-x border-paper-border bg-transparent text-center text-sm outline-none disabled:opacity-60"
+              aria-invalid={belowMin || !hasValidQty}
             />
             <button
               type="button"
@@ -192,10 +209,15 @@ export function AddToCart({ product }: { product: Product }) {
               <PlusIcon className="h-4 w-4" />
             </button>
           </div>
-          {minQty > 1 && (
+          {minQty > 1 && !belowMin && (
             <p className="text-xs text-paper-muted">Мин. {minQty} бр.</p>
           )}
         </div>
+        {belowMin ? (
+          <p className="mt-2 text-sm font-medium text-red-600" role="alert">
+            Минималното количество за поръчка е {minQty} бр.
+          </p>
+        ) : null}
       </div>
 
       {pricing.priceTiersEnabled && pricing.priceTiers.length > 0 && (
@@ -270,7 +292,12 @@ export function AddToCart({ product }: { product: Product }) {
       ) : (
         <form
           action={async () => {
-            if (buttonState !== "idle" || onInquiry || resolved.unitPrice == null)
+            if (
+              buttonState !== "idle" ||
+              !canAdd ||
+              onInquiry ||
+              resolved.unitPrice == null
+            )
               return;
             setButtonState("adding");
             addCartItem(variantData, product, quantity);
@@ -283,7 +310,13 @@ export function AddToCart({ product }: { product: Product }) {
             window.setTimeout(() => setButtonState("idle"), 1400);
           }}
         >
-          <SubmitButton available={available} state={buttonState} />
+          <SubmitButton
+            available={available}
+            state={buttonState}
+            disabledReason={
+              belowMin || !hasValidQty ? "Добави в Количка" : null
+            }
+          />
           <p aria-live="polite" className="sr-only" role="status">
             {buttonState === "added"
               ? "Продуктът е добавен в количката"

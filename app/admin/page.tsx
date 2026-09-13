@@ -70,12 +70,14 @@ export default async function AdminDashboard({
           </p>
         </div>
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Нови поръчки
-          </h3>
-          <p className="mt-2 text-3xl font-bold text-indigo-600 dark:text-indigo-400">
-            {stats.newOrders}
-          </p>
+          <Link href="/admin/orders?status=new" className="block">
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Нови поръчки
+            </h3>
+            <p className="mt-2 text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+              {stats.newOrders}
+            </p>
+          </Link>
         </div>
         <Link
           href="/admin/inquiries"
