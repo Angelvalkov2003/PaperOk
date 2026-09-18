@@ -16,6 +16,7 @@ import {
   hasFieldErrors,
   validateBusinessInquiryForm,
 } from "lib/validation";
+import { reportGoogleAdsLeadConversion } from "lib/google-ads";
 
 const productTypes = [
   "Рекламни картички",
@@ -93,6 +94,8 @@ export function BusinessInquiryForm() {
       if (!response.ok) {
         throw new Error(data.error || "Грешка при изпращане на запитването");
       }
+
+      reportGoogleAdsLeadConversion();
 
       setSuccess(true);
       setFieldErrors({});

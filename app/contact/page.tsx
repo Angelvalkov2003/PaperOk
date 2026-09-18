@@ -29,6 +29,7 @@ import {
   hasFieldErrors,
   validateContactForm,
 } from "lib/validation";
+import { reportGoogleAdsLeadConversion } from "lib/google-ads";
 
 const contactPhone = process.env.NEXT_PUBLIC_CONTACT_PHONE || "";
 
@@ -88,6 +89,8 @@ export default function ContactPage() {
       if (!response.ok) {
         throw new Error(data.error || "Грешка при изпращане на съобщението");
       }
+
+      reportGoogleAdsLeadConversion();
 
       setSuccess(true);
       setFieldErrors({});

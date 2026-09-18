@@ -3,8 +3,15 @@ export const SITE_NAME = "PaperOK";
 /** Canonical production site URL */
 export const SITE_URL = "https://paperok.bg";
 
-/** Google Analytics 4 — loaded after cookie consent */
+/** Google Analytics 4 — loaded after cookie consent (analytics) */
 export const GA_MEASUREMENT_ID = "G-3Q5K0W0735";
+
+/** Google Ads — loaded after cookie consent (marketing) */
+export const GOOGLE_ADS_ID = "AW-18454786172";
+
+/** Lead form submit conversion (contact + business inquiry) */
+export const GOOGLE_ADS_LEAD_CONVERSION_SEND_TO =
+  "AW-18454786172/bFnkCK6M2vkcEPzg9t9E";
 
 /** Transparent logo for UI on cream/colored backgrounds */
 export const LOGO_TRANSPARENT = "/logo-removebg-preview.png";

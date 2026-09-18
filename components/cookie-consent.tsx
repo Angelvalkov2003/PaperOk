@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { XMarkIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
-import { GA_MEASUREMENT_ID } from "lib/constants";
+import { GA_MEASUREMENT_ID, GOOGLE_ADS_ID } from "lib/constants";
 
 type CookiePreferences = {
   necessary: boolean;
@@ -14,82 +14,111 @@ type CookiePreferences = {
 const COOKIE_CONSENT_KEY = "cookie_consent";
 const COOKIE_PREFERENCES_KEY = "cookie_preferences";
 
-export function CookieConsent() {
-  const [showBanner, setShowBanner] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showSettingsButton, setShowSettingsButton] = useState(false);
-  const [preferences, setPreferences] = useState<CookiePreferences>({
-    necessary: true, // Always true, cannot be disabled
-    analytics: false,
-    marketing: false,
-  });
+const configuredTagIds = new Set<string>();
 
-  useEffect(() => {
-    // Check if user has already given consent
-    const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
-    const savedPreferences = localStorage.getItem(COOKIE_PREFERENCES_KEY);
+function ensureGtagLoaded(primaryId: string) {
+  if (typeof window === "undefined") return;
 
-    if (consent === "accepted") {
-      // Load saved preferences
-      if (savedPreferences) {
-        try {
-          const parsed = JSON.parse(savedPreferences);
-          setPreferences(parsed);
-          initializeAnalytics(parsed.analytics);
-        } catch (e) {
-          console.error("Error parsing cookie preferences:", e);
-        }
-      }
-      // Show settings button if consent was already given
-      setShowSettingsButton(true);
-      return; // Don't show banner if already accepted
-    }
+  window.dataLayer = window.dataLayer || [];
 
-    // Show banner after a short delay for better UX
-    const timer = setTimeout(() => {
-      setShowBanner(true);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  const initializeAnalytics = (enabled: boolean) => {
-    if (!enabled || typeof window === "undefined") return;
-
-    const gaId = process.env.NEXT_PUBLIC_GA_ID || GA_MEASUREMENT_ID;
-    // Don't initialize if no ID or if explicitly set to "none"
-    if (!gaId || gaId.trim() === "" || gaId.toLowerCase() === "none") {
-      return; // Silently skip if not configured
-    }
-
-    // Check if already initialized
-    if (window.dataLayer && typeof window.gtag === "function") {
-      return;
-    }
-
-    // Initialize Google Analytics
-    window.dataLayer = window.dataLayer || [];
-    const gtagFunction = function(...args: any[]) {
+  if (typeof window.gtag !== "function") {
+    const gtagFunction = function (...args: any[]) {
       window.dataLayer.push(args);
     };
     (gtagFunction as any).l = +new Date();
     (gtagFunction as any).q = [];
     window.gtag = gtagFunction as typeof window.gtag;
 
-    // Load Google Analytics script
+    window.gtag("js", new Date());
+
     const script = document.createElement("script");
     script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${primaryId}`;
     document.head.appendChild(script);
+  }
+}
 
-    // Configure gtag with GDPR compliance
-    window.gtag("js", new Date());
-    window.gtag("config", gaId, {
-      anonymize_ip: true, // GDPR compliance - anonymize IP addresses
-      allow_google_signals: false, // Disable Google Signals for GDPR
-      allow_ad_personalization_signals: false, // Disable ad personalization
+function configGtag(
+  id: string,
+  options?: Record<string, boolean | string | number>,
+) {
+  if (!id || configuredTagIds.has(id)) return;
+  if (typeof window === "undefined" || typeof window.gtag !== "function") {
+    return;
+  }
+  configuredTagIds.add(id);
+  window.gtag("config", id, options);
+}
+
+function initializeTracking(analytics: boolean, marketing: boolean) {
+  if (typeof window === "undefined") return;
+
+  const gaId = process.env.NEXT_PUBLIC_GA_ID || GA_MEASUREMENT_ID;
+  const adsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || GOOGLE_ADS_ID;
+
+  const wantsGa =
+    analytics &&
+    !!gaId &&
+    gaId.trim() !== "" &&
+    gaId.toLowerCase() !== "none";
+  const wantsAds =
+    marketing &&
+    !!adsId &&
+    adsId.trim() !== "" &&
+    adsId.toLowerCase() !== "none";
+
+  if (!wantsGa && !wantsAds) return;
+
+  const primaryId = wantsAds ? adsId : gaId;
+  ensureGtagLoaded(primaryId);
+
+  if (wantsGa) {
+    configGtag(gaId, {
+      anonymize_ip: true,
+      allow_google_signals: false,
+      allow_ad_personalization_signals: false,
     });
-  };
+  }
+
+  if (wantsAds) {
+    configGtag(adsId);
+  }
+}
+
+export function CookieConsent() {
+  const [showBanner, setShowBanner] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSettingsButton, setShowSettingsButton] = useState(false);
+  const [preferences, setPreferences] = useState<CookiePreferences>({
+    necessary: true,
+    analytics: false,
+    marketing: false,
+  });
+
+  useEffect(() => {
+    const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
+    const savedPreferences = localStorage.getItem(COOKIE_PREFERENCES_KEY);
+
+    if (consent === "accepted") {
+      if (savedPreferences) {
+        try {
+          const parsed = JSON.parse(savedPreferences) as CookiePreferences;
+          setPreferences(parsed);
+          initializeTracking(!!parsed.analytics, !!parsed.marketing);
+        } catch (e) {
+          console.error("Error parsing cookie preferences:", e);
+        }
+      }
+      setShowSettingsButton(true);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setShowBanner(true);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const acceptAll = () => {
     const allAccepted: CookiePreferences = {
@@ -121,7 +150,7 @@ export function CookieConsent() {
     localStorage.setItem(COOKIE_CONSENT_KEY, "accepted");
     localStorage.setItem(COOKIE_PREFERENCES_KEY, JSON.stringify(prefs));
     setPreferences(prefs);
-    initializeAnalytics(prefs.analytics);
+    initializeTracking(prefs.analytics, prefs.marketing);
   };
 
   const openSettings = () => {
@@ -129,12 +158,11 @@ export function CookieConsent() {
   };
 
   const updatePreference = (key: keyof CookiePreferences, value: boolean) => {
-    if (key === "necessary") return; // Cannot disable necessary cookies
+    if (key === "necessary") return;
     setPreferences((prev) => ({ ...prev, [key]: value }));
   };
 
   if (!showBanner && !showSettings) {
-    // Show settings button if consent was already given
     if (showSettingsButton) {
       return (
         <button
@@ -152,7 +180,6 @@ export function CookieConsent() {
 
   return (
     <>
-      {/* Cookie Banner */}
       {showBanner && !showSettings && (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-paper-white border-t border-paper-border shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -162,9 +189,11 @@ export function CookieConsent() {
                   Използваме бисквитки
                 </h3>
                 <p className="text-sm text-paper-text">
-                  Използваме бисквитки, за да подобрим вашето изживяване, да анализираме трафика и да персонализираме съдържанието. 
-                  Като натиснете "Приеми всички", вие се съгласявате с използването на всички бисквитки. 
-                  Можете да промените настройките по всяко време.{" "}
+                  Използваме бисквитки, за да подобрим вашето изживяване, да
+                  анализираме трафика и да персонализираме съдържанието. Като
+                  натиснете &quot;Приеми всички&quot;, вие се съгласявате с
+                  използването на всички бисквитки. Можете да промените
+                  настройките по всяко време.{" "}
                   <Link
                     href="/privacy-policy"
                     className="text-paper-green hover:underline"
@@ -186,10 +215,7 @@ export function CookieConsent() {
                 >
                   Отхвърли всички
                 </button>
-                <button
-                  onClick={acceptAll}
-                  className="btn-primary-sm"
-                >
+                <button onClick={acceptAll} className="btn-primary-sm">
                   Приеми всички
                 </button>
               </div>
@@ -198,7 +224,6 @@ export function CookieConsent() {
         </div>
       )}
 
-      {/* Cookie Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
           <div className="bg-paper-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -217,10 +242,11 @@ export function CookieConsent() {
               </div>
 
               <p className="text-sm text-paper-text mb-6">
-                Можете да изберете кои бисквитки да приемете. Необходимите бисквитки са задължителни за функционирането на сайта и не могат да бъдат деактивирани.
+                Можете да изберете кои бисквитки да приемете. Необходимите
+                бисквитки са задължителни за функционирането на сайта и не могат
+                да бъдат деактивирани.
               </p>
 
-              {/* Necessary Cookies */}
               <div className="mb-6 p-4 border border-paper-border rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <div>
@@ -228,7 +254,8 @@ export function CookieConsent() {
                       Необходими бисквитки
                     </h3>
                     <p className="text-sm text-paper-text mt-1">
-                      Тези бисквитки са задължителни за основното функциониране на уебсайта и не могат да бъдат деактивирани.
+                      Тези бисквитки са задължителни за основното функциониране
+                      на уебсайта и не могат да бъдат деактивирани.
                     </p>
                   </div>
                   <div className="ml-4">
@@ -242,7 +269,6 @@ export function CookieConsent() {
                 </div>
               </div>
 
-              {/* Analytics Cookies */}
               <div className="mb-6 p-4 border border-paper-border rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex-1">
@@ -250,8 +276,10 @@ export function CookieConsent() {
                       Аналитични бисквитки
                     </h3>
                     <p className="text-sm text-paper-text mt-1">
-                      Тези бисквитки ни помагат да разберем как посетителите използват нашия уебсайт, като събират и докладват информация анонимно. 
-                      Използваме Google Analytics за тази цел.
+                      Тези бисквитки ни помагат да разберем как посетителите
+                      използват нашия уебсайт, като събират и докладват
+                      информация анонимно. Използваме Google Analytics за тази
+                      цел.
                     </p>
                   </div>
                   <div className="ml-4">
@@ -259,7 +287,9 @@ export function CookieConsent() {
                       <input
                         type="checkbox"
                         checked={preferences.analytics}
-                        onChange={(e) => updatePreference("analytics", e.target.checked)}
+                        onChange={(e) =>
+                          updatePreference("analytics", e.target.checked)
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-paper-section peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-paper-accent-bg rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-paper-white after:border-paper-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-paper-green"></div>
@@ -268,7 +298,6 @@ export function CookieConsent() {
                 </div>
               </div>
 
-              {/* Marketing Cookies */}
               <div className="mb-6 p-4 border border-paper-border rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex-1">
@@ -276,7 +305,9 @@ export function CookieConsent() {
                       Маркетингови бисквитки
                     </h3>
                     <p className="text-sm text-paper-text mt-1">
-                      Тези бисквитки се използват за показване на реклами, които са по-релевантни за вас и вашите интереси.
+                      Тези бисквитки се използват за Google Ads и измерване на
+                      конверсии (напр. изпратена форма за запитване), както и за
+                      по-релевантни реклами.
                     </p>
                   </div>
                   <div className="ml-4">
@@ -284,7 +315,9 @@ export function CookieConsent() {
                       <input
                         type="checkbox"
                         checked={preferences.marketing}
-                        onChange={(e) => updatePreference("marketing", e.target.checked)}
+                        onChange={(e) =>
+                          updatePreference("marketing", e.target.checked)
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-paper-section peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-paper-accent-bg rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-paper-white after:border-paper-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-paper-green"></div>
@@ -326,7 +359,6 @@ export function CookieConsent() {
   );
 }
 
-// Extend Window interface for gtag
 declare global {
   interface Window {
     gtag: {
