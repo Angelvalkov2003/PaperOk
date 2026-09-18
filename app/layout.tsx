@@ -1,6 +1,7 @@
 import { CartProvider } from "components/cart/cart-context";
 import { ConditionalNavbar } from "components/layout/conditional-navbar";
 import { CookieConsent } from "components/cookie-consent";
+import { GoogleTags } from "components/google-tags";
 import { ErrorPopupProvider } from "components/error-popup-provider";
 import {
   LOGO_WITH_BACKGROUND,
@@ -98,6 +99,7 @@ export default async function RootLayout({
       <body
         className={`${dmSans.className} bg-paper-bg text-paper-text antialiased selection:bg-paper-accent-bg selection:text-paper-heading`}
       >
+        <GoogleTags />
         <CartProvider>
           <ErrorPopupProvider>
             <ConditionalNavbar />

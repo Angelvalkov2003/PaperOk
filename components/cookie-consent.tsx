@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { XMarkIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
-import { GA_MEASUREMENT_ID, GOOGLE_ADS_ID } from "lib/constants";
 
 type CookiePreferences = {
   necessary: boolean;
@@ -14,75 +13,24 @@ type CookiePreferences = {
 const COOKIE_CONSENT_KEY = "cookie_consent";
 const COOKIE_PREFERENCES_KEY = "cookie_preferences";
 
-const configuredTagIds = new Set<string>();
-
-function ensureGtagLoaded(primaryId: string) {
+function applyConsent(analytics: boolean, marketing: boolean) {
   if (typeof window === "undefined") return;
 
   window.dataLayer = window.dataLayer || [];
-
   if (typeof window.gtag !== "function") {
-    const gtagFunction = function (...args: any[]) {
-      window.dataLayer.push(args);
+    // Fallback stub — GoogleTags normally defines gtag in <head>
+    window.gtag = function gtag() {
+      // eslint-disable-next-line prefer-rest-params
+      window.dataLayer.push(arguments);
     };
-    (gtagFunction as any).l = +new Date();
-    (gtagFunction as any).q = [];
-    window.gtag = gtagFunction as typeof window.gtag;
-
-    window.gtag("js", new Date());
-
-    const script = document.createElement("script");
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${primaryId}`;
-    document.head.appendChild(script);
-  }
-}
-
-function configGtag(
-  id: string,
-  options?: Record<string, boolean | string | number>,
-) {
-  if (!id || configuredTagIds.has(id)) return;
-  if (typeof window === "undefined" || typeof window.gtag !== "function") {
-    return;
-  }
-  configuredTagIds.add(id);
-  window.gtag("config", id, options);
-}
-
-function initializeTracking(analytics: boolean, marketing: boolean) {
-  if (typeof window === "undefined") return;
-
-  const gaId = process.env.NEXT_PUBLIC_GA_ID || GA_MEASUREMENT_ID;
-  const adsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || GOOGLE_ADS_ID;
-
-  const wantsGa =
-    analytics &&
-    !!gaId &&
-    gaId.trim() !== "" &&
-    gaId.toLowerCase() !== "none";
-  const wantsAds =
-    marketing &&
-    !!adsId &&
-    adsId.trim() !== "" &&
-    adsId.toLowerCase() !== "none";
-
-  if (!wantsGa && !wantsAds) return;
-
-  const primaryId = wantsAds ? adsId : gaId;
-  ensureGtagLoaded(primaryId);
-
-  if (wantsGa) {
-    configGtag(gaId, {
-      anonymize_ip: true,
-      allow_google_signals: false,
-      allow_ad_personalization_signals: false,
-    });
   }
 
-  if (wantsAds) {
-    configGtag(adsId);
-  }
+  window.gtag("consent", "update", {
+    ad_storage: marketing ? "granted" : "denied",
+    ad_user_data: marketing ? "granted" : "denied",
+    ad_personalization: marketing ? "granted" : "denied",
+    analytics_storage: analytics ? "granted" : "denied",
+  });
 }
 
 export function CookieConsent() {
@@ -104,7 +52,7 @@ export function CookieConsent() {
         try {
           const parsed = JSON.parse(savedPreferences) as CookiePreferences;
           setPreferences(parsed);
-          initializeTracking(!!parsed.analytics, !!parsed.marketing);
+          applyConsent(!!parsed.analytics, !!parsed.marketing);
         } catch (e) {
           console.error("Error parsing cookie preferences:", e);
         }
@@ -150,7 +98,7 @@ export function CookieConsent() {
     localStorage.setItem(COOKIE_CONSENT_KEY, "accepted");
     localStorage.setItem(COOKIE_PREFERENCES_KEY, JSON.stringify(prefs));
     setPreferences(prefs);
-    initializeTracking(prefs.analytics, prefs.marketing);
+    applyConsent(prefs.analytics, prefs.marketing);
   };
 
   const openSettings = () => {
@@ -361,11 +309,7 @@ export function CookieConsent() {
 
 declare global {
   interface Window {
-    gtag: {
-      (...args: any[]): void;
-      l?: number;
-      q?: any[];
-    };
+    gtag: (...args: any[]) => void;
     dataLayer: any[];
   }
 }
