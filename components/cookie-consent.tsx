@@ -21,11 +21,11 @@ function applyConsent(analytics: boolean, marketing: boolean) {
     // Fallback stub — GoogleTags normally defines gtag in <head>
     window.gtag = function gtag() {
       // eslint-disable-next-line prefer-rest-params
-      window.dataLayer.push(arguments);
+      window.dataLayer!.push(arguments);
     };
   }
 
-  window.gtag("consent", "update", {
+  window.gtag!("consent", "update", {
     ad_storage: marketing ? "granted" : "denied",
     ad_user_data: marketing ? "granted" : "denied",
     ad_personalization: marketing ? "granted" : "denied",
@@ -305,11 +305,4 @@ export function CookieConsent() {
       )}
     </>
   );
-}
-
-declare global {
-  interface Window {
-    gtag: (...args: any[]) => void;
-    dataLayer: any[];
-  }
 }
