@@ -50,6 +50,21 @@ export function isSpeedyConfigured(): boolean {
   );
 }
 
+function formatSpeedyError(data: any, status?: number): string {
+  const err = data?.error;
+  if (err && typeof err === "object") {
+    const parts = [err.message, err.context]
+      .filter((p): p is string => typeof p === "string" && p.trim().length > 0)
+      .map((p) => p.trim());
+    if (err.code != null) parts.push(`код ${err.code}`);
+    if (parts.length) return parts.join(" — ");
+  }
+  if (typeof data?.message === "string" && data.message.trim()) {
+    return data.message.trim();
+  }
+  return status ? `Speedy API грешка (${status})` : "Speedy API грешка";
+}
+
 async function speedyPost<T>(path: string, body: Record<string, unknown>): Promise<T> {
   const auth = getCredentials();
   const res = await fetch(`${SPEEDY_BASE}${path}`, {
@@ -66,15 +81,17 @@ async function speedyPost<T>(path: string, body: Record<string, unknown>): Promi
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    const message =
-      data?.error?.message ||
-      data?.message ||
-      `Speedy API грешка (${res.status})`;
-    throw new Error(message);
+    console.error("Speedy API error", {
+      path,
+      status: res.status,
+      error: data?.error ?? data,
+    });
+    throw new Error(formatSpeedyError(data, res.status));
   }
 
   if (data?.error) {
-    throw new Error(data.error.message || "Speedy API грешка");
+    console.error("Speedy API error body", { path, error: data.error });
+    throw new Error(formatSpeedyError(data));
   }
 
   return data as T;
@@ -116,12 +133,11 @@ export async function findOffices(
   siteId: number,
   officeType?: SpeedyOfficeType,
 ): Promise<SpeedyOffice[]> {
+  // Speedy currently returns HTTP 400 when officeType is sent on
+  // /location/office — fetch all for the site and filter locally.
   const data = await speedyPost<{ offices?: SpeedyOffice[] }>(
     "/location/office/",
-    {
-      siteId,
-      ...(officeType ? { officeType } : {}),
-    },
+    { siteId },
   );
 
   let offices = data.offices || [];

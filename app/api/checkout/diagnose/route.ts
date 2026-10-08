@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "lib/supabase/service";
-import { isSpeedyConfigured, findSites, calculateShipping } from "lib/speedy";
+import {
+  isSpeedyConfigured,
+  findSites,
+  findOffices,
+  calculateShipping,
+} from "lib/speedy";
 import { isStripeEnabled, isStripePublicEnabled } from "lib/stripe";
 import { envPresenceReport } from "lib/checkout-diagnostics";
 
@@ -104,6 +109,27 @@ export async function GET() {
           samplePrice: calc.priceTotal,
           serviceId: calc.serviceId,
         };
+
+        try {
+          const offices = await findOffices(sites[0].id, "OFFICE");
+          const apts = await findOffices(sites[0].id, "APT");
+          checks.speedy = {
+            ...(checks.speedy as object),
+            findOfficesOk: true,
+            officeCount: offices.length,
+            aptCount: apts.length,
+          };
+        } catch (officeError) {
+          checks.speedy = {
+            ...(checks.speedy as object),
+            findOfficesOk: false,
+            officeError:
+              officeError instanceof Error
+                ? { message: officeError.message }
+                : String(officeError),
+          };
+          report.ok = false;
+        }
       }
     } catch (error) {
       checks.speedy = {
