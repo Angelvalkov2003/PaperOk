@@ -300,11 +300,7 @@ export function inferOrderStatusFromTrack(
 }
 
 export function parcelWeightFromProducts(
-  products: Array<{ quantity?: number }>,
+  _products: Array<{ quantity?: number }>,
 ): number {
-  const count = products.reduce(
-    (sum, p) => sum + Math.max(0, Number(p.quantity) || 0),
-    0,
-  );
-  return estimateParcelWeight(count || 1);
+  return estimateParcelWeight();
 }

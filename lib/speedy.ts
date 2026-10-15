@@ -111,10 +111,12 @@ export function formatOfficeLabel(office: SpeedyOffice): string {
   return addr ? `${name} — ${addr}` : name;
 }
 
-/** Rough parcel weight from cart item count (kg). */
-export function estimateParcelWeight(itemCount: number): number {
-  const weight = 0.3 + Math.max(1, itemCount) * 0.15;
-  return Math.min(Math.max(weight, 0.5), 20);
+/** Fixed parcel weight for Speedy quotes/shipments (kg). Small non-bulky packs. */
+export const SPEEDY_PARCEL_WEIGHT_KG = 0.25;
+
+/** Speedy parcel weight — always 250 g (itemCount kept for call-site compatibility). */
+export function estimateParcelWeight(_itemCount?: number): number {
+  return SPEEDY_PARCEL_WEIGHT_KG;
 }
 
 export async function findSites(name: string): Promise<SpeedySite[]> {

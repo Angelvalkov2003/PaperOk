@@ -101,7 +101,7 @@ export async function GET() {
       if (sites[0]?.id) {
         const calc = await calculateShipping({
           siteId: sites[0].id,
-          weightKg: 0.5,
+          weightKg: 0.25,
         });
         checks.speedy = {
           ...(checks.speedy as object),
