@@ -1,7 +1,7 @@
 export const SITE_NAME = "PaperOK";
 
-/** Canonical production site URL */
-export const SITE_URL = "https://paperok.bg";
+/** Canonical production site URL (www — apex redirects here) */
+export const SITE_URL = "https://www.paperok.bg";
 
 /** Google Analytics 4 — loaded after cookie consent (analytics) */
 export const GA_MEASUREMENT_ID = "G-3Q5K0W0735";

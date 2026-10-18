@@ -1,8 +1,18 @@
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
+import type { Metadata } from "next";
 import { isAdmin } from "lib/supabase/auth";
 import { AdminNavbar } from "components/admin/navbar";
 import { headers } from "next/headers";
+
+/** Keep the admin area out of search / AI indexes */
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
+};
 
 export default async function AdminLayout({
   children,

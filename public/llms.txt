@@ -1,0 +1,29 @@
+# PaperOK
+
+> Ръчно изработени картички, подаръци и семенна хартия със семена — създадени в София, България.
+> Hand-made seed paper cards, gifts and craft paper — made in Sofia, Bulgaria.
+
+PaperOK (PaperOK EcoArt Studio) прави продукти от рециклирана семенна хартия: след употреба хартията може да се засади и да поникнат цветя или билки.
+
+## Site
+- Homepage: https://www.paperok.bg/
+- Products: https://www.paperok.bg/products
+- Contact: https://www.paperok.bg/contact
+- Business: https://www.paperok.bg/za-biznesa
+- Blog: https://www.paperok.bg/blog
+- Sitemap: https://www.paperok.bg/sitemap.xml
+- Robots: https://www.paperok.bg/robots.txt
+
+## Product categories
+- Картички (cards): seed-paper greeting cards
+- Подаръци (gifts): notebooks, calendars, sachets, sets
+- Семенна хартия (seed paper): material for craft, gifts and business projects
+
+## Crawl preferences
+- Public storefront pages may be indexed and cited.
+- Do not index `/admin` or private API routes.
+- Preferred crawlers for discovery in ChatGPT Search: OAI-SearchBot (and ChatGPT-User for user-initiated fetches).
+
+## Contact
+- Email: paperok.info@gmail.com
+- Location: Sofia, Bulgaria
