@@ -247,11 +247,15 @@ export async function getProductByIdForAdmin(productId: string) {
       .from("products")
       .select("*")
       .eq("id", productId)
-      .single();
+      .maybeSingle();
 
     if (error) {
+      // Missing / invalid id — use order snapshot instead of crashing admin UI
+      if (error.code === "PGRST116" || error.code === "22P02") {
+        return null;
+      }
       console.error("Error fetching product:", error);
-      throw new Error("Failed to fetch product");
+      return null;
     }
 
     return data;
@@ -261,7 +265,7 @@ export async function getProductByIdForAdmin(productId: string) {
       throw error;
     }
     console.error("Error in getProductByIdForAdmin:", error);
-    throw error;
+    return null;
   }
 }
 

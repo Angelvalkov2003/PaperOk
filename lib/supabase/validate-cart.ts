@@ -1,6 +1,12 @@
 import { createServiceClient } from "./service";
 import type { ProductSizeVariant } from "lib/types";
 import {
+  getAiFormat,
+  isAiDesignProductId,
+  resolveAiUnitPrice,
+  type AiFormatId,
+} from "lib/ai-design/constants";
+import {
   getEffectiveQuantityPricing,
   getMinOrderQuantity,
   normalizeProductSizeVariant,
@@ -13,6 +19,10 @@ export type CartPriceCheckItem = {
   quantity: number;
   price: number;
   title: string;
+  aiDesign?: {
+    formatId: string;
+    withFrame?: boolean;
+  };
 };
 
 type ProductRow = {
@@ -61,12 +71,46 @@ async function fetchProductForPriceCheck(
   };
 }
 
+function validateAiCartItem(
+  item: CartPriceCheckItem,
+): { ok: true; lineTotal: number } | { ok: false; error: string } {
+  const formatId = (item.aiDesign?.formatId ||
+    item.variantId.replace(/^ai-design-/, "").replace(/-framed$/, "")) as AiFormatId;
+  const format = getAiFormat(formatId);
+  if (!format) {
+    return { ok: false, error: `Невалиден AI формат: ${item.title}` };
+  }
+  const withFrame =
+    Boolean(item.aiDesign?.withFrame) || /-framed$/.test(item.variantId);
+  if (withFrame && format.framedPrice == null) {
+    return { ok: false, error: `Рамката не е налична за ${format.label}` };
+  }
+  const expected = resolveAiUnitPrice(formatId, withFrame);
+  if (Math.abs(expected - item.price) > 0.01) {
+    return {
+      ok: false,
+      error: `Цената на ${item.title} е променена. Моля, обновете количката.`,
+    };
+  }
+  if (item.quantity < 1) {
+    return { ok: false, error: `Невалидно количество за ${item.title}` };
+  }
+  return { ok: true, lineTotal: expected * item.quantity };
+}
+
 export async function validateCartPrices(
   items: CartPriceCheckItem[],
 ): Promise<{ valid: boolean; error?: string; total?: number }> {
   let total = 0;
 
   for (const item of items) {
+    if (isAiDesignProductId(item.productId)) {
+      const ai = validateAiCartItem(item);
+      if (!ai.ok) return { valid: false, error: ai.error };
+      total += ai.lineTotal;
+      continue;
+    }
+
     const product = await fetchProductForPriceCheck(item.productId);
 
     if (!product) {

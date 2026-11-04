@@ -71,6 +71,22 @@ export type Product = {
   priceTiers?: PriceTier[];
 };
 
+/** Extra payload for AI personal card/poster cart lines. */
+export type AiDesignCartMeta = {
+  kind: "ai_design";
+  projectId?: string;
+  variantId: string;
+  formatId: string;
+  withFrame: boolean;
+  backOption?: string | null;
+  exactText?: string;
+  styles?: string[];
+  idea?: string;
+  imageUrl: string;
+  printUrl?: string;
+  cloudinaryPublicId?: string;
+};
+
 export type CartItem = {
   id: string;
   productId: string;
@@ -93,6 +109,8 @@ export type CartItem = {
     id: string;
     title: string;
   };
+  /** Present for AI design line items. */
+  aiDesign?: AiDesignCartMeta;
 };
 
 export type Cart = {

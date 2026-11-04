@@ -1,0 +1,203 @@
+﻿================================================================================
+PaperOK — „Генерирай своята персонална картичка“
+Пълна архитектура (без код) — след отговорите на Angel, 2026-10-26
+================================================================================
+
+1. ПРОДУКТОВА ИДЕЯ (накратко)
+-----------------------------
+Отделна, видима страница от навбара: „Генерирай своята персонална картичка“.
+
+Клиентът:
+  1) избира размер и формат на картичката (голяма/малка, едностранна или
+     сгъваема — не като визитка);
+  2) описва в чат какво иска ИЛИ качва снимка/лого ИЛИ импортира готов дизайн;
+  3) AI връща няколко визуални опции;
+  4) може да свали която и да е генерация;
+  5) ако хареса — „Добави в количката“ като нормална стока (custom card);
+  6) плаща през стандартния checkout.
+
+Админът:
+  - вижда поръчката с флаг „AI / custom card“;
+  - вижда и сваля избраното изображение за печат;
+  - след като пратката е изпратена + ~1 месец — може (или автоматично) да
+    изтрие файла, за да не пълни Cloudinary.
+
+
+2. ЖИЗНЕН ЦИКЪЛ НА СНИМКИТЕ (важно за разходи и място)
+------------------------------------------------------
+Два режима:
+
+A) ЕФЕМЕРНИ (преди поръчка)
+   - генерации + импорти по време на чата;
+   - Cloudinary папка: PaperOK/ephemeral/cards/{sessionId}/
+   - TTL: sliding 20 мин от последна активност, hard max 45 мин;
+   - Vercel Cron на 5–10 мин чисти expired;
+   - pagehide beacon = бонус, не единствен механизъм.
+
+B) ПОРЪЧАНИ (за печат)
+   - при „Add to cart“ / при успешен checkout: файлът се КОПИРА/премества в
+     PaperOK/orders/{orderId}/print-art
+   - записва се в order_items (или order metadata): image_url, public_id,
+     card_size, card_fold, source=ai|import
+   - живее до: order_status = shipped/fulfilled + 30 дни → purge
+     (cron или бутон в админ „Delete print assets“)
+
+Така: свободно генериране не пълни диска; само платените/избраните остават.
+
+
+3. UX ПОТОК (страницата)
+------------------------
+Стъпка 0 — Формат
+  - размер (напр. A6 / A5 / квадрат 14×14 — точните mm се фиксират с клиента)
+  - тип: едностранна | сгъваема (outside / inside layout later)
+  - кратък preview на пропорцията
+
+Стъпка 1 — Чат + вход
+  - chat: „какво искаш на картичката“
+  - бутони: Upload photo/logo | Import design | Generate options
+  - Turnstile captcha преди първа generate/import в сесията
+
+Стъпка 2 — Опции
+  - grid 2–4 изображения от AI (или 1 при import)
+  - Download на всяко
+  - „Избери за количката“ на едно
+  - „Генерирай пак“ (ако има оставащ лимит)
+
+Стъпка 3 — Количка
+  - line item: „Personal card — {size}, {fold}“ + thumbnail
+  - цена: фиксирана матрица по размер/сгъване (от конфиг, не от AI)
+  - стандартна доставка (Delivery) — без event pickup
+
+Стъпка 4 — Админ поръчка
+  - badge AI/Custom
+  - download print file (високо качество / оригинал Cloudinary)
+  - print specs: size, fold, bleed notes (ако има)
+
+
+4. ЛИМИТИ (anti-abuse) — предложени числа
+-----------------------------------------
+Месечен бюджет AI: €40 общо ≈ ceiling ~400 евтини генерации ако ~€0.10,
+а реално с евтин модел ще са много повече „глави“.
+
+Per visitor (IP + session cookie):
+  - 3 AI generations / 20 минути
+  - 10 image imports or uploads / час
+  - max 2 активни сесии / IP / час
+  - max file 8 MB → server/Cloudinary resize max edge ~2000px
+
+Ако лимитът се удари: ясно съобщение „Опитай отново след X минути“.
+
+Kill switch: NEXT_PUBLIC_PERSONAL_CARD_AI=false
+
+
+5. AI PROVIDER — препоръка (цена / качество / лесни ключове)
+------------------------------------------------------------
+Цел: ≤ ~$0.10 (€0.10) на изображение; лесно вадене на API key и кредити.
+
+Препоръка за v1:
+  Primary: fal.ai — Flux / Flux Schnell (или еквивалент image model)
+    - обикновено далеч под $0.10/image при Schnell-клас
+    - прост API key, prepaid credits
+    - добре за prompt + image-to-image (лого/снимка като reference)
+
+  Fallback (ако fal не стане): Replicate (Flux Schnell) — също евтино,
+  pay-as-you-go.
+
+Не започвам с най-скъпите OpenAI image tiers за v1 при бюджет €40 —
+качеството на Flux Schnell е достатъчно за картичка; ако клиента иска
+по-premium look по-късно, качваме модела (по-малко gens за същите €40).
+
+Budget guard в кода:
+  - брояч на успешни generations за месеца в DB/Redis
+  - при достигане на €40 еквивалент → UI: „AI временно недостъпен“
+
+
+6. СИГУРНОСТ
+------------
+- AI + Cloudinary secrets само на сървъра
+- отделен публичен API от admin /api/upload
+- session token (httpOnly cookie) + hashed в DB
+- Turnstile (Cloudflare) преди generate
+- rate limits IP+session
+- не предсказуеми URL-и; ephemeral префикс
+- поръчаните файлове: само admin (service role) + signed download
+- клиентът не може да излисти чужди сесии/поръчки
+
+
+7. ДАННИ (Supabase — само метаданни)
+------------------------------------
+card_ai_sessions
+  id, token_hash, created_at, expires_at, last_activity_at,
+  ip_hash, gen_count, import_count, card_size, card_fold, status
+
+card_ai_assets
+  id, session_id, kind (input|output|import),
+  cloudinary_public_id, url, width, height, bytes,
+  created_at, expires_at, promoted_order_id nullable
+
+orders / order_items разширение:
+  is_custom_card bool
+  custom_card_public_id
+  custom_card_url
+  custom_card_size
+  custom_card_fold
+  custom_card_source (ai|import)
+  custom_card_purge_after timestamptz (shipped_at + 30d)
+
+
+8. API (логически)
+------------------
+POST /api/cards/session          — старт + размер/сгъване
+POST /api/cards/upload           — снимка/лого/import → Cloudinary ephemeral
+POST /api/cards/chat             — съобщение; може да връща text + trigger generate
+POST /api/cards/generate         — 1..N options (в лимита)
+POST /api/cards/select           — избира output → готви cart payload
+POST /api/cards/session/end      — early cleanup
+GET  /api/cron/cards-cleanup     — ephemeral TTL + order purge after 30d
+Admin: download endpoint за print asset
+
+
+9. КОЛИЧКА / ЦЕНА
+-----------------
+Custom card = продуктов тип в shop (или виртуален line item с фиксирана
+цена от матрица size×fold). Не ползваме AI за ценообразуване.
+
+Примерна матрица (за потвърждение с клиента):
+  A6 single £X | A6 fold £Y | A5 single £Z | A5 fold £W
+Точните GBP — от клиента.
+
+
+10. PRIVACY (логичен текст на страницата)
+-----------------------------------------
+Кратко:
+  „Качените и генерираните изображения се ползват само за тази сесия.
+   Ако не добавиш картичка в поръчка, файловете се изтриват автоматично
+   до около 20–45 минути. Ако поръчаш, запазваме файла за печат и го
+   изтриваме около месец след изпращане.“
+
+
+11. NAV
+-------
+Нов линк в публичния navbar, по-видим:
+  „Personal card“ / „Генерирай картичка“
+  (финален BG copy с клиента — paperok.bg)
+
+
+12. PHASES
+----------
+P1 Session + upload/import + Cloudinary ephemeral + cron cleanup
+P2 Chat UI + generate options + download
+P3 Add to cart + order flags + admin download
+P4 Purge-after-ship + budget guard + polish
+
+
+13. ОТВОРЕНИ ТОЧКИ (за клиента — виж client brief)
+-------------------------------------------------
+- точни размери mm и цени
+- едностранна vs сгъваема: печатни правила (bleed, inside blank?)
+- BG copy на навбара и страницата
+- дали AI да връща 2, 3 или 4 опции на generate
+
+
+КРАЙ — вътрешен архитектурен документ
+================================================================================

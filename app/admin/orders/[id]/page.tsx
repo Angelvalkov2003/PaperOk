@@ -9,6 +9,7 @@ import {
 } from "lib/order-status";
 import { getSpeedyShipmentEligibility } from "lib/speedy-order";
 import { SpeedyShipmentPanel } from "components/admin/speedy-shipment-panel";
+import { isAiDesignProductId } from "lib/ai-design/constants";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { OrderEditForm } from "components/admin/order-edit-form";
@@ -264,15 +265,26 @@ export default async function OrderDetailPage({
         <div className="space-y-4">
           {await Promise.all(
             products.map(async (product: any, index: number) => {
-              // Try to get product details to show image
+              const ai = product.ai_design as
+                | {
+                    kind?: string;
+                    imageUrl?: string;
+                    printUrl?: string;
+                    formatId?: string;
+                    withFrame?: boolean;
+                    backOption?: string | null;
+                    exactText?: string;
+                  }
+                | undefined;
+
+              // AI lines are virtual — no catalog product row
               let productDetails = null;
-              try {
+              if (!isAiDesignProductId(String(product.id || ""))) {
                 productDetails = await getProductByIdForAdmin(product.id);
-              } catch (error) {
-                // Product might not exist anymore, use order snapshot
               }
 
               const productImage =
+                ai?.imageUrl ||
                 productDetails?.featured_image?.url ||
                 productDetails?.featured_image ||
                 null;
@@ -290,20 +302,50 @@ export default async function OrderDetailPage({
                         fill
                         className="object-cover"
                         sizes="80px"
+                        unoptimized={Boolean(ai?.imageUrl)}
                       />
                     </div>
                   )}
-                  <div className="flex-1 flex justify-between items-start">
+                  <div className="flex-1 flex justify-between items-start gap-3">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
                         {product.name}
+                        {ai?.kind === "ai_design" && (
+                          <span className="ml-2 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                            AI дизайн
+                          </span>
+                        )}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Количество: {product.quantity} × €{product.price.toFixed(2)}
+                        Количество: {product.quantity} × €{Number(product.price).toFixed(2)}
                       </p>
+                      {ai?.kind === "ai_design" && (
+                        <div className="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300">
+                          <p>
+                            Формат: {ai.formatId}
+                            {ai.withFrame ? " · с бяла рамка" : ""}
+                            {ai.backOption
+                              ? ` · гръб: ${ai.backOption === "planting" ? "инструкция" : "празен"}`
+                              : ""}
+                          </p>
+                          {ai.exactText ? (
+                            <p>Текст за печат: {ai.exactText}</p>
+                          ) : null}
+                          {(ai.printUrl || ai.imageUrl) && (
+                            <a
+                              href={ai.printUrl || ai.imageUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-medium text-indigo-600 hover:underline"
+                            >
+                              Изтегли файл за печат
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <p className="font-medium text-gray-900 dark:text-white">
-                      €{(product.price * product.quantity).toFixed(2)}
+                      €{(Number(product.price) * product.quantity).toFixed(2)}
                     </p>
                   </div>
                 </div>

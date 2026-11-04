@@ -55,6 +55,14 @@ export async function POST(request: NextRequest) {
         quantity: item.quantity,
         price: item.price,
         title: item.product?.title || item.title || "",
+        ...(item.aiDesign
+          ? {
+              aiDesign: {
+                formatId: item.aiDesign.formatId,
+                withFrame: item.aiDesign.withFrame,
+              },
+            }
+          : {}),
       })),
     );
     if (!validated.valid) {

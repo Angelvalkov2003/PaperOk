@@ -15,6 +15,7 @@ export interface CreateOrderData {
     price: number;
     quantity: number;
     variant_name?: string;
+    ai_design?: Record<string, unknown>;
   }>;
   total_price: number;
   products_subtotal?: number;
@@ -66,7 +67,12 @@ export async function createOrder(data: CreateOrderData) {
     price: product.price,
     quantity: product.quantity,
     ...(product.variant_name ? { variant_name: product.variant_name } : {}),
+    ...(product.ai_design ? { ai_design: product.ai_design } : {}),
   }));
+
+  const hasAiDesign = productsJson.some(
+    (p) => p.ai_design || String(p.id).startsWith("ai-design"),
+  );
 
   const { status, payment_status } = initialStatuses(data.payment_method);
 
@@ -126,6 +132,33 @@ export async function createOrder(data: CreateOrderData) {
 
   if (!order) {
     throw new Error("Failed to create order");
+  }
+
+  if (hasAiDesign) {
+    const { error: aiFlagError } = await supabase
+      .from("orders")
+      .update({ has_ai_design: true })
+      .eq("id", order.id);
+    if (aiFlagError) {
+      console.warn(
+        "has_ai_design column missing or update failed — run ai_design_migration.sql",
+        aiFlagError.message,
+      );
+    }
+
+    const projectIds = [
+      ...new Set(
+        productsJson
+          .map((p) => (p.ai_design as { projectId?: string } | undefined)?.projectId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    if (projectIds.length) {
+      await supabase
+        .from("ai_design_projects")
+        .update({ order_id: order.id, expires_at: null })
+        .in("id", projectIds);
+    }
   }
 
   return order;

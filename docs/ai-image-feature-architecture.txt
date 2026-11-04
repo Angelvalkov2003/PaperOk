@@ -1,0 +1,291 @@
+﻿================================================================================
+PaperOK — AI + Cloudinary ephemeral image feature
+Architecture plan (NO CODE YET — for review / confirmation)
+Date: 2026-10-26
+================================================================================
+
+STATUS
+------
+Това е архитектурен дизайн, не имплементация. След твоите отговори
+на въпросите в края и потвърждение — едва тогава се програмира.
+
+
+1) КАКВО РАЗБИРАМ ОТ ИДЕЯТА (работно предположение)
+----------------------------------------------------
+Клиент на публичния сайт:
+  - качва снимка (или избира вход),
+  - AI генерира/обработва изображение,
+  - вижда резултат на екрана,
+  - резултатът е ВРЕМЕНЕН — не трябва да пълни Cloudinary и базата,
+  - след край на сесия / напускане / TTL (10–15 мин) се чисти автоматично.
+
+Снимките да минават през Cloudinary, както вече прави админ панелът
+(/api/upload + CLOUDINARY_URL), но с ОТДЕЛЕН поток за публични AI сесии
+(по-строги лимити, отделна папка, TTL delete).
+
+Ако идеята е друга (напр. само admin tool, или AI текст без upload,
+или персонализация на продукт) — кажи и пренареждаме плана.
+
+
+2) ЦЕЛИ ЗА ПРОДУКШЪН
+--------------------
+- Сигурност: клиентът да не може да открадне чужди сесии/файлове,
+  да не злоупотребява с AI/Cloudinary сметката.
+- Цена: контролирани лимити; евтино в нормален трафик.
+- Не претоварваме: Cloudinary + Supabase + Vercel AI calls.
+- UX: бързо усещане; резултатът да изчезва предвидимо.
+- Оперативно: лесно чистене; лесно спиране на функцията с env flag.
+
+
+3) ПРЕПОРЪЧАН ПОДХОД (най-лесен + сигурен + изгоден)
+----------------------------------------------------
+A) Клиентът НЕ качва директно към Cloudinary с API secret.
+   Браузър → наш API (rate-limited) → Cloudinary (unsigned preset ИЛИ
+   server-side upload с secret само на сървъра).
+
+B) AI се вика САМО от сървъра (API route / server action).
+   API ключове никога в браузъра.
+
+C) Временни файлове в Cloudinary папка:
+     PaperOK/ephemeral/ai-sessions/{sessionId}/
+   с Cloudinary upload tag: ephemeral_ai
+   и context/metadata: session_id, expires_at
+
+D) В Supabase минимален запис (не binary!):
+     ai_sessions (
+       id, public_token_hash, created_at, expires_at,
+       status, ip_hash, generation_count, last_activity_at
+     )
+     ai_assets (
+       id, session_id, cloudinary_public_id, kind (input|output),
+       created_at, expires_at, bytes_approx
+     )
+   Без да пазим самите картинки в Postgres.
+
+E) TTL = 15 минути от последна активност (sliding) ИЛИ твърд max 30 мин
+   от създаване на сесия — което изберете след въпросите.
+
+F) Изтриване:
+   1) Клиент: beacon/sendBeacon при unload → "end session" (best effort)
+   2) Cron (Vercel Cron на всеки 5–10 мин) → трие expired assets в
+      Cloudinary + rows в DB (надеждният канал)
+   3) Опционално: Cloudinary auto-upload expiry / lifecycle ако планът
+      го поддържа — като втори слой, не единствен.
+
+G) Feature flag:
+     NEXT_PUBLIC_AI_IMAGE_FEATURE=true/false
+   за бърз kill-switch.
+
+
+4) ПОТОК (happy path)
+---------------------
+1. Потребителят отваря AI страницата → POST /api/ai/session
+   → създава се sessionId + кратък lived token (httpOnly cookie или
+     signed token в memory; cookie е по-просто за CSRF/XSS баланс).
+
+2. Upload входна снимка → POST /api/ai/upload
+   - проверка: session валидна, размер max (напр. 5–8 MB),
+     MIME image/jpeg|png|webp, rate limit
+   - resize на сървъра или Cloudinary transformation при upload
+     (max edge 1600px, q_auto) — по-евтино за AI и storage
+   - запис в ai_assets (kind=input)
+
+3. Generate → POST /api/ai/generate
+   - rate limit per session + per IP
+   - вика AI provider с URL на Cloudinary (или временен signed URL)
+   - записва output в Cloudinary ephemeral folder
+   - връща URL към клиента (signed temporary URL ако е възможно)
+
+4. UI показва preview. Download може да е позволен локално в браузъра
+   (клиентът си държи файла) — сървърът пак трие след TTL.
+
+5. Напускане / "Start over" / expiry → delete session assets.
+   Cron чисти останалото.
+
+
+5) ЗАЩО НЕ САМО „триене при затваряне на таба“
+---------------------------------------------
+unload beacon е ненадежден (мобилни браузъри, crash, kill app).
+Затова:
+  - TTL + cron = задължително
+  - beacon = nice-to-have за по-бързо освобождаване
+Без cron Cloudinary ще се пълни.
+
+
+6) ЛИМИТИ (предложение за старт — евтино и защитено)
+----------------------------------------------------
+Per session (15 мин):
+  - max 1–2 input uploads
+  - max 2–3 AI generations
+Per IP / час:
+  - max N sessions (напр. 5)
+  - max M generations (напр. 10)
+File:
+  - max 5–8 MB преди upload
+  - принудителен resize
+AI:
+  - timeout 30–60s
+  - без паралелни 5 заявки от един клиент (queue 1)
+Kill switch + monitoring на Cloudinary bandwidth/storage.
+
+
+7) СИГУРНОСТ (anti-abuse / anti-theft)
+-------------------------------------
+- Session token: random, hashed в DB; не guessable sequential IDs.
+- Authorization: всяко API действие изисква валидна сесия.
+- Не листваме чужди public_id; URL-ите са непредсказуеми + кратък живот.
+- Admin /api/upload остава само за admin auth; публичният AI upload е
+  ОТДЕЛЕН endpoint с по-строги правила.
+- CAPTCHA (Turnstile/hCaptcha) преди първа генерация — силно
+  препоръчително срещу ботове (евтино).
+- Content policy: отхвърляне на явно злоупотребяващи prompt-и ако има
+  text prompt; moderation flag от AI provider ако има.
+- CORS + same-origin; CSRF защита на cookie-based session.
+- Не логваме пълни API keys; не връщаме cloudinary api_secret.
+
+
+8) РАЗХОДИ — как да е „сравнително изгодно“
+-------------------------------------------
+Най-скъпото обикновено е AI, не Cloudinary ephemeral.
+Стратегия:
+  - малък input (resize) = по-евтин AI
+  - малко generations per user
+  - евтин модел за v1 (напр. image-to-image / edit API според задачата)
+  - Cloudinary: ephemeral folder + агресивно delete; не държим forever
+  - DB: само метаданни (байта, не MB)
+  - Кеш: не кешираме AI output в CDN дълго (или къс Cache-Control)
+
+Груби контрол панел в admin (по-късно): брой сесии/ден, грешки, cost
+estimate.
+
+
+9) АРХИТЕКТУРНИ КОМПОНЕНТИ (в PaperOK стека)
+---------------------------------------------
+Frontend (Next.js):
+  - страница/секция AI UX
+  - upload UI (reuse pattern от admin ImageUploadButton, но нов API)
+  - preview + loading + error + „result expires in mm:ss“
+
+API routes:
+  - POST /api/ai/session
+  - POST /api/ai/upload
+  - POST /api/ai/generate
+  - POST /api/ai/session/end
+  - GET  /api/cron/ai-cleanup  (Authorization: CRON_SECRET)
+
+Lib:
+  - cloudinary ephemeral helpers (upload, destroy by prefix/tag)
+  - ai provider client
+  - rate limit (Upstash Redis ИЛИ DB counters — Redis е по-чисто в prod)
+
+Supabase:
+  - ai_sessions, ai_assets (+ RLS: no public read; service role only)
+
+Cloudinary:
+  - folder PaperOK/ephemeral/...
+  - отделен upload preset (ако unsigned) с allowed formats + max size
+
+
+10) АВТОМАТИЧНО ИЗТРИВАНЕ — ФИНАЛНА ПРЕПОРЪКА
+---------------------------------------------
+Да, има смисъл. Най-добрият вариант:
+
+  TTL 15 минути sliding от last_activity
+  + hard cap 30 минути от session start
+  + Vercel Cron на всеки 5 минути
+  + optional sendBeacon on pagehide
+
+Не разчитаме само на „клиентът затвори таба“.
+
+
+11) PHASES (след потвърждение)
+------------------------------
+Phase 0 — потвърдени отговори на въпросите долу
+Phase 1 — schema + session + upload + cleanup cron (без AI още)
+Phase 2 — AI generate + UI
+Phase 3 — captcha, tighter limits, monitoring, kill switch polish
+Phase 4 — optional: allow user to „save to order / email me“ (платено?)
+           ако искате нещо да ОСТАВА — това е отделен платен/opt-in поток
+
+
+12) РИСКОВЕ
+-----------
+- Ботове източват AI бюджет → captcha + IP limits + kill switch
+- Cloudinary bill ако cron спре → alerting + folder quota
+- GDPR: ephemeral лични снимки → кратък retention + privacy copy
+- Лоша AI quality → ясен UX „experimental“
+- Abuse (NSFW/upload malware) → MIME check + size + provider moderation
+
+
+================================================================================
+ВЪПРОСИ КЪМ ТЕБ (моля отговори номерирано — без тях не програмираме)
+================================================================================
+
+ПРОДУКТ / UX
+Q1. Какво точно прави AI закрайния клиент?
+    (а) качва своя снимка → AI я стилизира в PaperOK естетика
+    (б) генерира картинка от текст (prompt)
+    (в) вижда продукт (тениска/принт) с негова снимка „върху“ него
+    (г) друго — опиши с 2–3 изречения
+
+Q2. Къде живее във сайта? (/ai , /workshops/... , checkout, отделен landing)
+
+Q3. Резултатът само за забавление/споделяне ли е, или трябва да може
+    да се поръча като продукт?
+
+Q4. Трябва ли потребителят да може да ИЗТЕГЛИ резултата на телефона си
+    преди да изтече TTL?
+
+Q5. Има ли текст/prompt от клиента, или само upload на снимка?
+
+
+TTL / ИЗТРИВАНЕ
+Q6. 10 мин, 15 мин, или sliding 15 + hard 30 — кое предпочиташ?
+
+Q7. Ако клиентът иска да запази резултата по-дълго — OK ли е „не“ за v1
+    (само TTL), или искаш email-link / „save“ бутон?
+
+
+AI PROVIDER / ЦЕНА
+Q8. Имаш ли предпочитан AI? (OpenAI Images, Replicate, fal.ai, Stability…)
+    Или да предложа най-евтиния подходящ според Q1?
+
+Q9. Месечен бюджет таван за AI? (напр. £50 / £150 / „колкото трябва за старт“)
+
+Q10. Очаквани ползвания/ден в началото? (10 / 100 / 1000 генерации)
+
+
+СИГУРНОСТ / ДОСТЪП
+Q11. Публично за всеки посетител, или само след лека регистрация/email?
+
+Q12. OK ли е Cloudflare Turnstile (безплатен captcha) преди generate?
+
+Q13. Трябва ли admin да вижда лог на сесиите (без самите снимки)?
+
+
+CLOUDINARY / HOSTING
+Q14. Ползваме СЪЩИЯ Cloudinary акаунт като админа, само отделна папка
+    `ephemeral/` — OK ли е? (препоръчвам да)
+
+Q15. Max размер на входна снимка от телефона? (предложение: 8 MB → resize)
+
+
+ПРАВНИ / БРАНД
+Q16. Трябва ли privacy текст: „снимките се трият до 15 мин, не се ползват
+     за трениране…“?
+
+Q17. Има ли забранени съдържания (лица на деца, логота на чужди брандове)?
+
+
+СЛЕД ОТГОВОРИТЕ
+---------------
+Ще заключа:
+  - финален flow diagram (текст)
+  - точни таблици + API списък
+  - избран AI + rough cost
+  - security checklist
+и чак тогава имплементация.
+
+
+КРАЙ НА ДОКУМЕНТА
+================================================================================

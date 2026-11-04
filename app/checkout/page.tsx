@@ -127,6 +127,7 @@ export default function CheckoutPage() {
           price: number;
           quantity: number;
           variant_name?: string;
+          ai_design?: Record<string, unknown>;
         } = {
           id: item.productId,
           name: item.product.title,
@@ -135,6 +136,9 @@ export default function CheckoutPage() {
         };
         if (item.variant.title && item.variant.title !== item.product.title) {
           row.variant_name = item.variant.title;
+        }
+        if (item.aiDesign) {
+          row.ai_design = item.aiDesign as unknown as Record<string, unknown>;
         }
         return row;
       });
@@ -180,6 +184,14 @@ export default function CheckoutPage() {
         quantity: item.quantity,
         price: item.price,
         title: item.product.title,
+        ...(item.aiDesign
+          ? {
+              aiDesign: {
+                formatId: item.aiDesign.formatId,
+                withFrame: item.aiDesign.withFrame,
+              },
+            }
+          : {}),
       }));
 
       const createRes = await fetch("/api/checkout/create-order", {
@@ -236,6 +248,14 @@ export default function CheckoutPage() {
                     : undefined,
                 },
                 variant: { title: item.variant.title },
+                ...(item.aiDesign
+                  ? {
+                      aiDesign: {
+                        formatId: item.aiDesign.formatId,
+                        withFrame: item.aiDesign.withFrame,
+                      },
+                    }
+                  : {}),
               })),
             },
             shippingPrice: shipping.shippingPrice,

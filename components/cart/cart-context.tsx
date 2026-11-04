@@ -1,12 +1,18 @@
 "use client";
 
 import type {
+  AiDesignCartMeta,
   Cart,
   CartItem,
   PriceTier,
   Product,
   ProductVariant,
 } from "lib/types";
+import {
+  AI_DESIGN_PRODUCT_ID,
+  aiVariantId,
+  type AiFormatId,
+} from "lib/ai-design/constants";
 import {
   getEffectiveQuantityPricing,
   getMinOrderQuantity,
@@ -22,6 +28,15 @@ import React, {
 
 type UpdateType = "plus" | "minus" | "delete";
 
+type AddAiDesignInput = {
+  title: string;
+  price: number;
+  imageUrl: string;
+  formatId: AiFormatId;
+  withFrame: boolean;
+  meta: AiDesignCartMeta;
+};
+
 type CartContextType = {
   cart: Cart | null;
   updateCartItem: (itemId: string, updateType: UpdateType) => void;
@@ -30,6 +45,7 @@ type CartContextType = {
     product: Product,
     quantity?: number,
   ) => void;
+  addAiDesignItem: (input: AddAiDesignInput) => void;
   clearCart: () => void;
   /** Increments when an item is added — use to trigger cart icon animation */
   cartBump: number;
@@ -293,7 +309,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       );
 
       const existingItem = validItems.find(
-        (item) => item.variantId === variant.id,
+        (item) => item.variantId === variant.id && !item.aiDesign,
       );
       const updatedItem = createOrUpdateCartItem(
         existingItem,
@@ -308,9 +324,65 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       const updatedItems = existingItem
         ? validItems.map((item) =>
-            item.variantId === variant.id ? updatedItem : item,
+            item.variantId === variant.id && !item.aiDesign
+              ? updatedItem
+              : item,
           )
         : [...validItems, updatedItem];
+
+      return {
+        ...cart,
+        ...updateCartTotals(updatedItems),
+        items: updatedItems,
+      };
+    });
+    setCartBump((n) => n + 1);
+  };
+
+  const addAiDesignItem = (input: AddAiDesignInput) => {
+    setCart((currentCart) => {
+      const cart = currentCart || createEmptyCart();
+      const validItems = (cart.items || []).filter(
+        (item): item is CartItem =>
+          item !== null && item !== undefined && item.id !== undefined,
+      );
+
+      const catalogVariantId = aiVariantId(input.formatId, input.withFrame);
+      const lineId = `ai-${input.meta.variantId}`;
+
+      const existing = validItems.find((item) => item.id === lineId);
+      const nextItem: CartItem = {
+        id: lineId,
+        productId: AI_DESIGN_PRODUCT_ID,
+        variantId: catalogVariantId,
+        quantity: existing ? existing.quantity + 1 : 1,
+        price: input.price,
+        minQuantity: 1,
+        basePrice: input.price,
+        priceTiersEnabled: false,
+        priceTiers: [],
+        product: {
+          id: AI_DESIGN_PRODUCT_ID,
+          title: input.title,
+          handle: "ai-design",
+          image: {
+            id: input.meta.variantId,
+            url: input.imageUrl,
+            altText: input.title,
+          },
+        },
+        variant: {
+          id: catalogVariantId,
+          title: input.withFrame
+            ? `${input.formatId} с рамка`
+            : input.formatId,
+        },
+        aiDesign: input.meta,
+      };
+
+      const updatedItems = existing
+        ? validItems.map((item) => (item.id === lineId ? nextItem : item))
+        : [...validItems, nextItem];
 
       return {
         ...cart,
@@ -330,7 +402,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ cart, updateCartItem, addCartItem, clearCart, cartBump }}
+      value={{
+        cart,
+        updateCartItem,
+        addCartItem,
+        addAiDesignItem,
+        clearCart,
+        cartBump,
+      }}
     >
       {children}
     </CartContext.Provider>
