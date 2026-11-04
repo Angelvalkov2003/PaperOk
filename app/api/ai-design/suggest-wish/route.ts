@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { suggestWishTexts } from "lib/ai-design/openai-client";
+import { isAiPreviewRequest } from "lib/ai-design/preview-auth";
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isAiPreviewRequest(request)) {
+      return NextResponse.json(
+        { error: "AI дизайнът е в тестов режим. Въведете preview парола." },
+        { status: 401 },
+      );
+    }
+
     if (!process.env.OPENAI_API_KEY?.trim()) {
       return NextResponse.json(
         { error: "OpenAI не е конфигуриран" },

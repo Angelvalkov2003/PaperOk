@@ -5,6 +5,7 @@ import {
   AI_FORMATS,
   AI_IDEA_MAX_CHARS,
   AI_MAX_ATTEMPTS,
+  AI_MAX_DESIGNS,
   AI_MAX_STYLES,
   AI_STYLES,
   AI_TEXT_WARN_CHARS,
@@ -19,6 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const STORAGE_KEY = "paperok_ai_design_v1";
+const DESIGNS_COUNT_KEY = "paperok_ai_designs_count_v1";
 
 function newSessionId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -74,6 +76,7 @@ export function AiDesignStudio() {
   const [wishOptions, setWishOptions] = useState<string[]>([]);
   const [wishHint, setWishHint] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [designsStarted, setDesignsStarted] = useState(1);
 
   const format = useMemo(
     () => AI_FORMATS.find((f) => f.id === formatId)!,
@@ -83,11 +86,20 @@ export function AiDesignStudio() {
   const selectedVariant =
     variants.find((v) => v.id === selectedVariantId) || variants[0] || null;
   const canGenerate = attemptsUsed < AI_MAX_ATTEMPTS && !generating;
+  const canStartNewDesign = designsStarted < AI_MAX_DESIGNS;
   const isCard = format.kind === "card";
   const supportsFrame = format.framedPrice != null;
 
   useEffect(() => {
     const saved = loadPersisted();
+    let count = 1;
+    try {
+      count = Math.max(1, Number(localStorage.getItem(DESIGNS_COUNT_KEY)) || 1);
+    } catch {
+      count = 1;
+    }
+    setDesignsStarted(count);
+
     if (saved?.sessionId) {
       setSessionId(saved.sessionId);
       setProjectId(saved.projectId);
@@ -106,6 +118,42 @@ export function AiDesignStudio() {
     }
     setHydrated(true);
   }, []);
+
+  const startNewDesign = useCallback(
+    (opts?: { keepIdea?: boolean }) => {
+      if (!canStartNewDesign) {
+        toast.error(
+          `Достигнат е лимитът от ${AI_MAX_DESIGNS} дизайна в тази сесия.`,
+        );
+        return;
+      }
+      const nextCount = designsStarted + 1;
+      setDesignsStarted(nextCount);
+      try {
+        localStorage.setItem(DESIGNS_COUNT_KEY, String(nextCount));
+      } catch {
+        /* ignore */
+      }
+      setSessionId(newSessionId());
+      setProjectId(undefined);
+      setAttemptsUsed(0);
+      setVariants([]);
+      setSelectedVariantId(null);
+      setFaceSide("front");
+      setWishOptions([]);
+      setWishHint(null);
+      setError(null);
+      if (!opts?.keepIdea) {
+        setIdea("");
+        setExactText("");
+        setStyles([]);
+      }
+      toast.success(
+        `Нов дизайн (${nextCount} от ${AI_MAX_DESIGNS}). Имате пак ${AI_MAX_ATTEMPTS} опита.`,
+      );
+    },
+    [canStartNewDesign, designsStarted],
+  );
 
   useEffect(() => {
     if (!hydrated || !sessionId) return;
@@ -168,29 +216,34 @@ export function AiDesignStudio() {
       { duration: 12000 },
     );
     try {
-      const res = await fetch("/api/ai-design/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId,
-          projectId,
-          formatId,
-          withFrame: supportsFrame ? withFrame : false,
-          backOption: isCard ? backOption : null,
-          idea,
-          styles,
-          exactText,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Грешка при генериране");
+        const res = await fetch("/api/ai-design/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId,
+            projectId,
+            formatId,
+            withFrame: supportsFrame ? withFrame : false,
+            backOption: isCard ? backOption : null,
+            idea,
+            styles,
+            exactText,
+            attemptsUsed,
+            existingVariants: variants,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Грешка при генериране");
 
-      setProjectId(data.projectId);
-      setAttemptsUsed(data.attemptsUsed);
-      setVariants(data.variants || []);
-      setSelectedVariantId(data.selectedVariantId || null);
-      setFaceSide("front");
-      toast.success("Дизайнът е готов");
+        setProjectId(data.projectId);
+        setAttemptsUsed(data.attemptsUsed);
+        setVariants(data.variants || []);
+        setSelectedVariantId(data.selectedVariantId || null);
+        setFaceSide("front");
+        if (data.warning) {
+          toast.message(data.warning, { duration: 8000 });
+        }
+        toast.success("Дизайнът е готов");
     } catch (err: any) {
       setError(err.message || "Грешка при генериране");
       toast.error(err.message || "Грешка при генериране");
@@ -272,6 +325,10 @@ export function AiDesignStudio() {
       meta,
     });
     toast.success("Добавено в количката");
+    if (canStartNewDesign) {
+      // Free up a fresh attempt budget for the next card
+      startNewDesign({ keepIdea: false });
+    }
   };
 
   const generateLabel =
@@ -396,6 +453,11 @@ export function AiDesignStudio() {
           <label className="mb-1.5 block text-sm font-medium text-paper-heading">
             Точен текст върху картичката
           </label>
+          <p className="mb-2 text-xs text-paper-muted">
+            Текстът се рисува от AI директно в изображението — прегледът и
+            файлът за печат изглеждат еднакво. Ако промените текста, генерирайте
+            нов вариант.
+          </p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
               value={exactText}
@@ -464,8 +526,9 @@ export function AiDesignStudio() {
         )}
 
         <div className="rounded-xl bg-paper-accent-bg/60 px-3 py-2 text-sm text-paper-text">
-          Имате до {AI_MAX_ATTEMPTS} опита за този дизайн. Всеки опит създава по
-          един вариант. Използвани опити: {attemptsUsed} от {AI_MAX_ATTEMPTS}
+          Дизайн {designsStarted} от {AI_MAX_DESIGNS}. За този дизайн:{" "}
+          {attemptsUsed} от {AI_MAX_ATTEMPTS} опита. След добавяне в количката
+          или с „Нов дизайн“ започвате следваща картичка с нови 3 опита.
         </div>
 
         {error && (
@@ -496,6 +559,17 @@ export function AiDesignStudio() {
           className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
         >
           {generating ? "Генериране… (~20 сек.)" : generateLabel}
+        </button>
+
+        <button
+          type="button"
+          disabled={!canStartNewDesign || generating}
+          onClick={() => startNewDesign()}
+          className="w-full rounded-xl border border-paper-border px-3 py-2.5 text-sm font-medium text-paper-heading hover:bg-paper-accent-bg disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {canStartNewDesign
+            ? "Нов дизайн (нови 3 опита)"
+            : `Лимит ${AI_MAX_DESIGNS} дизайна`}
         </button>
       </section>
 
@@ -555,23 +629,14 @@ export function AiDesignStudio() {
               )}
             </div>
           ) : selectedVariant ? (
-            <>
-              <Image
-                src={selectedVariant.previewUrl || selectedVariant.imageUrl}
-                alt="AI дизайн"
-                fill
-                className="object-cover"
-                sizes="(max-width:768px) 100vw, 420px"
-                unoptimized
-              />
-              {exactText.trim() && (
-                <div className="pointer-events-none absolute inset-x-3 bottom-4 rounded-lg bg-white/75 px-3 py-2 text-center shadow-sm backdrop-blur-[2px]">
-                  <p className="whitespace-pre-wrap font-serif text-sm leading-snug text-paper-heading sm:text-base">
-                    {exactText}
-                  </p>
-                </div>
-              )}
-            </>
+            <Image
+              src={selectedVariant.previewUrl || selectedVariant.imageUrl}
+              alt="AI дизайн"
+              fill
+              className="object-cover"
+              sizes="(max-width:768px) 100vw, 420px"
+              unoptimized
+            />
           ) : (
             <div className="flex h-full items-center justify-center p-6 text-center text-paper-muted">
               Тук ще видите своя дизайн

@@ -291,6 +291,74 @@ button {
   animation: fade-in 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
 }
 
+@keyframes ai-cta-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--paper-green) 35%, transparent),
+      var(--paper-shadow);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow:
+      0 0 0 10px color-mix(in srgb, var(--paper-green) 0%, transparent),
+      var(--paper-shadow-lg);
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes ai-cta-shine {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.ai-home-cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  border-radius: 9999px;
+  padding: 0.95rem 1.6rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #fff;
+  background: linear-gradient(
+    120deg,
+    #3f6b45 0%,
+    #5a8f55 45%,
+    #3f6b45 100%
+  );
+  background-size: 180% 180%;
+  animation:
+    ai-cta-pulse 2.8s ease-in-out infinite,
+    ai-cta-shine 4.5s ease-in-out infinite alternate;
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+
+.ai-home-cta:hover {
+  filter: brightness(1.05);
+  transform: translateY(-2px);
+}
+
+.ai-home-cta:focus-visible {
+  outline: 2px solid var(--paper-green);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-home-cta {
+    animation: none;
+  }
+}
+
 .animate-fadeIn {
   animation: fade-in-up 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
 }

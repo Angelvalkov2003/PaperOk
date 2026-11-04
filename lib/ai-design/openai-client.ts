@@ -28,20 +28,36 @@ export function buildImagePrompt(params: {
   idea: string;
   styles: AiStyleId[];
   formatId: AiFormatId;
+  exactText?: string;
 }): string {
   const format = getAiFormat(params.formatId);
   const kind = format?.kind === "poster" ? "poster print" : "greeting card front";
   const stylePart = params.styles.length
     ? `Visual style cues: ${styleLabels(params.styles)}.`
     : "Warm, handmade paper craft aesthetic.";
+  const text = params.exactText?.trim();
+
+  const textInstructions = text
+    ? [
+        "TEXT ON THE CARD (mandatory — render this exactly in the image):",
+        `The greeting text must appear clearly on the design, letter by letter exactly as written: «${text}».`,
+        "Use elegant readable typography: dark/black letters on a clean light or soft white paper panel near the lower third (or centered if it fits better).",
+        "The panel should look printed on seed paper — soft edges, natural, not a harsh UI box.",
+        "Bulgarian Cyrillic must be correct and sharp. Do not invent extra words, do not translate, do not misspell.",
+        "No watermarks, logos, or extra captions besides this greeting.",
+      ].join("\n")
+    : [
+        "Do NOT invent greeting text. If no text is provided, leave the composition decorative without letters.",
+        "No watermarks, logos, or random captions.",
+      ].join("\n");
 
   return [
     `Create a high-quality decorative ${kind} illustration for PaperOK, a Bulgarian seed-paper eco brand.`,
     "Look: warm paper texture feel, botanical/craft, soft natural colors, print-ready, centered composition.",
-    "IMPORTANT: Do NOT render any text, letters, numbers, logos, watermarks, or signatures in the image.",
-    "Leave a calm lower area suitable for later overlay of printed Bulgarian greeting text.",
+    "The final image IS the print preview — what the customer sees must match the downloadable file.",
     stylePart,
-    `Customer idea: ${params.idea.trim()}`,
+    textInstructions,
+    `Customer idea / scene: ${params.idea.trim()}`,
   ].join("\n");
 }
 
@@ -49,6 +65,7 @@ export async function generateAiDesignImage(params: {
   idea: string;
   styles: AiStyleId[];
   formatId: AiFormatId;
+  exactText?: string;
 }): Promise<{ b64: string; prompt: string }> {
   const openai = getOpenAI();
   const format = getAiFormat(params.formatId);

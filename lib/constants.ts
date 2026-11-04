@@ -70,7 +70,6 @@ export const FIXED_MENU = [
   { title: "Картички", path: "/products?collection=kartichki" },
   { title: "Подаръци", path: "/products?collection=podaraci" },
   { title: "Семенна хартия", path: "/products?collection=semenna-hartia" },
-  { title: "Създай с AI", path: "/ai-design" },
   { title: "За бизнеса", path: "/za-biznesa" },
   { title: "Блог", path: "/blog" },
   { title: "Контакти", path: "/contact" },
