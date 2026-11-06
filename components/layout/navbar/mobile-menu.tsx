@@ -6,6 +6,7 @@ import {
   ChevronDownIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { AiNavCta } from "components/layout/ai-nav-cta";
 import { SiteLogo } from "components/site-logo";
 import {
   buildCategoryTree,
@@ -334,14 +335,18 @@ export default function MobileMenu({
                   </button>
                 </div>
 
-                <div className="mb-6 w-full">
+                <div className="mb-4 w-full">
                   <Suspense fallback={<SearchSkeleton compact />}>
                     <Search compact />
                   </Suspense>
                 </div>
 
+                <AiNavCta variant="mobile" onNavigate={closeMobileMenu} />
+
                 <ul className="flex w-full flex-col gap-1">
                   {menu.map((item) => {
+                    if (item.path === "/ai-design") return null;
+
                     const handle = collectionFromPath(item.path);
                     const isMainSection = handle && sectionHandles.has(handle as any);
 

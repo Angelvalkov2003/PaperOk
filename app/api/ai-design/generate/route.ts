@@ -3,11 +3,10 @@ import {
   AI_IDEA_MAX_CHARS,
   AI_MAX_ATTEMPTS,
   AI_MAX_STYLES,
-  AI_STYLES,
   getAiFormat,
+  normalizeAiStyleId,
   type AiBackOption,
   type AiFormatId,
-  type AiStyleId,
 } from "lib/ai-design/constants";
 import { uploadAiDesignImage } from "lib/ai-design/cloudinary-upload";
 import {
@@ -20,10 +19,6 @@ import {
 } from "lib/ai-design/db";
 import { generateAiDesignImage } from "lib/ai-design/openai-client";
 import { isAiPreviewRequest } from "lib/ai-design/preview-auth";
-
-function isStyleId(value: string): value is AiStyleId {
-  return AI_STYLES.some((s) => s.id === value);
-}
 
 function newLocalId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -53,8 +48,8 @@ export async function POST(request: NextRequest) {
     const exactText = String(body.exactText || "").trim();
     const stylesRaw = Array.isArray(body.styles) ? body.styles : [];
     const styles = stylesRaw
-      .map((s: unknown) => String(s))
-      .filter(isStyleId)
+      .map((s: unknown) => normalizeAiStyleId(s))
+      .filter((s): s is NonNullable<typeof s> => Boolean(s))
       .slice(0, AI_MAX_STYLES);
     let projectId = body.projectId ? String(body.projectId) : "";
     const clientAttempts = Math.max(0, Number(body.attemptsUsed) || 0);

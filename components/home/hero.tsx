@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { AiHeroBanner } from "components/home/ai-hero-banner";
 import { PaperTexture } from "components/ui/paper-texture";
 import { PAPER_BACKGROUNDS, PAPER_OVERLAYS } from "lib/backgrounds";
 import { SITE_HEADLINE, SITE_TAGLINE } from "lib/constants";
@@ -33,6 +34,7 @@ export function Hero() {
               За бизнеса
             </Link>
           </div>
+          <AiHeroBanner />
         </div>
 
         <div className="animate-fade-in-right relative lg:col-span-6">

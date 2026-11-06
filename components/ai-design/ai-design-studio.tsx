@@ -6,14 +6,15 @@ import {
   AI_IDEA_MAX_CHARS,
   AI_MAX_ATTEMPTS,
   AI_MAX_DESIGNS,
-  AI_MAX_STYLES,
-  AI_STYLES,
   AI_TEXT_WARN_CHARS,
+  normalizeAiStyleId,
   resolveAiUnitPrice,
   type AiBackOption,
   type AiFormatId,
   type AiStyleId,
 } from "lib/ai-design/constants";
+import { AiPromptTips } from "components/ai-design/ai-prompt-tips";
+import { AiStylePicker } from "components/ai-design/ai-style-picker";
 import type { AiCartMeta, AiDesignVariant } from "lib/ai-design/types";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -107,7 +108,14 @@ export function AiDesignStudio() {
       setWithFrame(Boolean(saved.withFrame));
       setBackOption(saved.backOption || "planting");
       setIdea(saved.idea || "");
-      setStyles(Array.isArray(saved.styles) ? saved.styles : []);
+      setStyles(
+        Array.isArray(saved.styles)
+          ? saved.styles
+              .map((id) => normalizeAiStyleId(id))
+              .filter((id): id is AiStyleId => Boolean(id))
+              .slice(0, 1)
+          : [],
+      );
       setExactText(saved.exactText || "");
       setAttemptsUsed(Number(saved.attemptsUsed) || 0);
       setVariants(Array.isArray(saved.variants) ? saved.variants : []);
@@ -196,17 +204,6 @@ export function AiDesignStudio() {
     if (!supportsFrame && withFrame) setWithFrame(false);
     if (!isCard) setFaceSide("front");
   }, [supportsFrame, withFrame, isCard]);
-
-  const toggleStyle = (id: AiStyleId) => {
-    setStyles((prev) => {
-      if (prev.includes(id)) return prev.filter((s) => s !== id);
-      if (prev.length >= AI_MAX_STYLES) {
-        toast.message("Можете да изберете максимум 2 стила");
-        return prev;
-      }
-      return [...prev, id];
-    });
-  };
 
   const handleGenerate = useCallback(async () => {
     setError(null);
@@ -419,35 +416,12 @@ export function AiDesignStudio() {
           </p>
         </div>
 
-        <div>
-          <p className="mb-2 text-sm font-medium text-paper-heading">
-            Избери стил (по желание)
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {AI_STYLES.map((s) => {
-              const on = styles.includes(s.id);
-              const locked = !on && styles.length >= AI_MAX_STYLES;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  disabled={locked}
-                  onClick={() => toggleStyle(s.id)}
-                  className={`rounded-full border px-3 py-1.5 text-sm transition ${
-                    on
-                      ? "border-paper-green bg-paper-green text-white"
-                      : locked
-                        ? "cursor-not-allowed border-paper-border opacity-40"
-                        : "border-paper-border text-paper-text hover:border-paper-green"
-                  }`}
-                >
-                  {on ? "✓ " : ""}
-                  {s.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <AiPromptTips
+          idea={idea}
+          onIdeaChange={(next) => setIdea(next.slice(0, AI_IDEA_MAX_CHARS))}
+        />
+
+        <AiStylePicker value={styles} onChange={setStyles} />
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-paper-heading">
@@ -612,22 +586,20 @@ export function AiDesignStudio() {
           }`}
         >
           {faceSide === "back" && isCard ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-              {backOption === "planting" ? (
-                <>
-                  <p className="text-sm font-medium text-paper-heading">
-                    Инструкция за засаждане
-                  </p>
-                  <p className="text-xs leading-relaxed text-paper-text">
-                    Накиснете хартията, засадете в пръст, поливайте и изчакайте
-                    да поникнат семенцата. (Окончателният одобрен текст/дизайн
-                    на PaperOK ще се ползва при печат.)
-                  </p>
-                </>
-              ) : (
+            backOption === "planting" ? (
+              <Image
+                src="/backside.png"
+                alt="Гръб — инструкция за засаждане"
+                fill
+                className="object-cover"
+                sizes="(max-width:768px) 100vw, 420px"
+                priority={false}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center p-6 text-center">
                 <p className="text-sm text-paper-muted">Гърбът е празен</p>
-              )}
-            </div>
+              </div>
+            )
           ) : selectedVariant ? (
             <Image
               src={selectedVariant.previewUrl || selectedVariant.imageUrl}

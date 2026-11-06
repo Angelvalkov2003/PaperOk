@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import type { AiFormatId, AiStyleId } from "./constants";
-import { AI_STYLES, getAiFormat } from "./constants";
+import { getAiFormat, getAiStyle } from "./constants";
 
 function getOpenAI() {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -18,10 +18,25 @@ function textModel() {
   return process.env.OPENAI_TEXT_MODEL?.trim() || "gpt-4.1-mini";
 }
 
-function styleLabels(styles: AiStyleId[]): string {
-  return styles
-    .map((id) => AI_STYLES.find((s) => s.id === id)?.label || id)
-    .join(", ");
+function stylePromptPart(styles: AiStyleId[]): string {
+  if (!styles.length) {
+    return [
+      "STYLE: No specific customer style selected.",
+      "Default look: warm handmade paper-craft aesthetic, soft natural colors, print-ready centered composition.",
+    ].join("\n");
+  }
+
+  const lines = styles.map((id, index) => {
+    const style = getAiStyle(id);
+    if (!style) return `STYLE ${index + 1}: ${id}`;
+    return [
+      `STYLE (${style.label}):`,
+      style.promptGuidance,
+      "Follow this style direction strictly so the result matches the customer's chosen look.",
+    ].join("\n");
+  });
+
+  return lines.join("\n\n");
 }
 
 export function buildImagePrompt(params: {
@@ -32,9 +47,6 @@ export function buildImagePrompt(params: {
 }): string {
   const format = getAiFormat(params.formatId);
   const kind = format?.kind === "poster" ? "poster print" : "greeting card front";
-  const stylePart = params.styles.length
-    ? `Visual style cues: ${styleLabels(params.styles)}.`
-    : "Warm, handmade paper craft aesthetic.";
   const text = params.exactText?.trim();
 
   const textInstructions = text
@@ -53,9 +65,9 @@ export function buildImagePrompt(params: {
 
   return [
     `Create a high-quality decorative ${kind} illustration for PaperOK, a Bulgarian seed-paper eco brand.`,
-    "Look: warm paper texture feel, botanical/craft, soft natural colors, print-ready, centered composition.",
+    "Base material feel: warm seed-paper texture, natural fibers visible where appropriate, print-ready.",
     "The final image IS the print preview — what the customer sees must match the downloadable file.",
-    stylePart,
+    stylePromptPart(params.styles),
     textInstructions,
     `Customer idea / scene: ${params.idea.trim()}`,
   ].join("\n");
