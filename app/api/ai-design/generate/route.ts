@@ -7,6 +7,7 @@ import {
   normalizeAiStyleId,
   type AiBackOption,
   type AiFormatId,
+  type AiStyleId,
 } from "lib/ai-design/constants";
 import { uploadAiDesignImage } from "lib/ai-design/cloudinary-upload";
 import {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     const stylesRaw = Array.isArray(body.styles) ? body.styles : [];
     const styles = stylesRaw
       .map((s: unknown) => normalizeAiStyleId(s))
-      .filter((s): s is NonNullable<typeof s> => Boolean(s))
+      .filter((s: AiStyleId | null): s is AiStyleId => s != null)
       .slice(0, AI_MAX_STYLES);
     let projectId = body.projectId ? String(body.projectId) : "";
     const clientAttempts = Math.max(0, Number(body.attemptsUsed) || 0);
