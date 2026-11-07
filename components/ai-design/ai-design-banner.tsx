@@ -62,12 +62,12 @@ export function AiDesignBanner() {
 
       <div className="relative z-10 flex min-h-[9.5rem] items-stretch sm:min-h-[10.5rem]">
         <div className="flex min-w-0 flex-1 flex-col justify-center px-5 py-5 sm:px-7 sm:py-6 lg:px-8">
-          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#F6F1E4] px-2.5 py-1 text-[0.65rem] font-semibold tracking-[0.06em] text-[#4A4338] uppercase sm:text-xs">
+          <span className="inline-flex max-w-full w-fit items-center gap-1.5 rounded-full bg-[#F6F1E4] px-2.5 py-1 text-[0.65rem] font-semibold leading-snug tracking-wide text-[#4A4338] sm:text-xs">
             <span
               aria-hidden
               className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#C45C4A]"
             />
-            Новости от клуба
+            PaperOK — твоят зелен помощник
           </span>
 
           <h1

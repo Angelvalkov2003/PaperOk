@@ -60,8 +60,8 @@ export default function CartModal() {
             leaveFrom="translate-x-0"
             leaveTo="translate-x-full"
           >
-            <Dialog.Panel className="fixed bottom-0 right-0 top-0 flex h-full w-full flex-col border-l border-paper-border bg-paper-white/80 p-6 text-paper-heading backdrop-blur-xl md:w-[390px]">
-              <div className="flex items-center justify-between">
+            <Dialog.Panel className="fixed inset-y-0 right-0 flex h-[100dvh] max-h-[100dvh] w-full flex-col border-l border-paper-border bg-paper-white/80 px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-paper-heading backdrop-blur-xl md:w-[390px]">
+              <div className="flex shrink-0 items-center justify-between">
                 <p className="text-lg font-semibold">Моята Количка</p>
                 <button aria-label="Затвори количка" onClick={closeCart}>
                   <CloseCart />
@@ -76,8 +76,8 @@ export default function CartModal() {
                   </p>
                 </div>
               ) : (
-                <div className="flex h-full flex-col justify-between overflow-hidden p-1">
-                  <ul className="grow overflow-auto py-4">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-1">
+                  <ul className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-4 [-webkit-overflow-scrolling:touch]">
                     {cart.items
                       .sort((a, b) =>
                         a.product.title.localeCompare(b.product.title),
@@ -90,15 +90,15 @@ export default function CartModal() {
                             key={i}
                             className="flex w-full flex-col border-b border-paper-border"
                           >
-                            <div className="relative flex w-full flex-row justify-between px-1 py-4">
+                            <div className="relative flex w-full min-w-0 flex-row items-start justify-between gap-2 px-1 py-4">
                               <div className="absolute z-40 -ml-1 -mt-2">
                                 <DeleteItemButton
                                   item={item}
                                   optimisticUpdate={updateCartItem}
                                 />
                               </div>
-                              <div className="flex flex-row">
-                                <div className="relative h-16 w-16 overflow-hidden rounded-md border border-paper-border bg-paper-section">
+                              <div className="flex min-w-0 flex-1 flex-row">
+                                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-paper-border bg-paper-section">
                                   <Image
                                     className="h-full w-full object-cover"
                                     width={64}
@@ -110,27 +110,27 @@ export default function CartModal() {
                                 <Link
                                   href={productUrl}
                                   onClick={closeCart}
-                                  className="z-30 ml-2 flex flex-row space-x-4"
+                                  className="z-30 ml-2 flex min-w-0 flex-1 flex-row"
                                 >
-                                  <div className="flex flex-1 flex-col text-base">
-                                    <span className="leading-tight">
+                                  <div className="flex min-w-0 flex-1 flex-col text-base">
+                                    <span className="leading-tight break-words">
                                       {item.product.title}
                                     </span>
                                     {item.variant.title !== "Стандартен" ? (
-                                      <p className="text-sm text-paper-muted">
+                                      <p className="text-sm text-paper-muted break-words">
                                         {item.variant.title}
                                       </p>
                                     ) : null}
                                   </div>
                                 </Link>
                               </div>
-                              <div className="flex h-16 flex-col justify-between">
+                              <div className="flex shrink-0 flex-col items-end justify-between gap-2 self-stretch">
                                 <Price
-                                  className="flex justify-end space-y-2 text-right text-sm"
+                                  className="flex justify-end text-right text-sm"
                                   amount={(item.price * item.quantity).toString()}
                                   currencyCode={cart.currency}
                                 />
-                                <div className="ml-auto flex h-9 flex-row items-center rounded-full border border-paper-border">
+                                <div className="flex h-9 flex-row items-center rounded-full border border-paper-border">
                                   <EditItemQuantityButton
                                     item={item}
                                     type="minus"
@@ -153,35 +153,37 @@ export default function CartModal() {
                         );
                       })}
                   </ul>
-                  <div className="py-4 text-sm text-paper-muted">
-                    <div className="mb-3 flex items-center justify-between border-b border-paper-border pb-1">
-                      <p>Междинна сума</p>
-                      <Price
-                        className="text-right text-base text-paper-heading"
-                        amount={cart.subtotal.toString()}
-                        currencyCode={cart.currency}
-                      />
+                  <div className="shrink-0 border-t border-paper-border bg-paper-white/90 pt-4">
+                    <div className="pb-4 text-sm text-paper-muted">
+                      <div className="mb-3 flex items-center justify-between border-b border-paper-border pb-1">
+                        <p>Междинна сума</p>
+                        <Price
+                          className="text-right text-base text-paper-heading"
+                          amount={cart.subtotal.toString()}
+                          currencyCode={cart.currency}
+                        />
+                      </div>
+                      <div className="mb-3 flex items-center justify-between border-b border-paper-border pb-1 pt-1">
+                        <p>Доставка</p>
+                        <p className="text-right">Ще се изчисли при плащане</p>
+                      </div>
+                      <div className="mb-3 flex items-center justify-between border-b border-paper-border pb-1 pt-1">
+                        <p>Общо</p>
+                        <Price
+                          className="text-right text-base text-paper-heading"
+                          amount={cart.total.toString()}
+                          currencyCode={cart.currency}
+                        />
+                      </div>
                     </div>
-                    <div className="mb-3 flex items-center justify-between border-b border-paper-border pb-1 pt-1">
-                      <p>Доставка</p>
-                      <p className="text-right">Ще се изчисли при плащане</p>
-                    </div>
-                    <div className="mb-3 flex items-center justify-between border-b border-paper-border pb-1 pt-1">
-                      <p>Общо</p>
-                      <Price
-                        className="text-right text-base text-paper-heading"
-                        amount={cart.total.toString()}
-                        currencyCode={cart.currency}
-                      />
-                    </div>
+                    <Link
+                      href="/checkout"
+                      onClick={closeCart}
+                      className="btn-primary block w-full rounded-full opacity-90 hover:opacity-100"
+                    >
+                      Финализирай поръчката
+                    </Link>
                   </div>
-                  <Link
-                    href="/checkout"
-                    onClick={closeCart}
-                    className="btn-primary block w-full rounded-full opacity-90 hover:opacity-100"
-                  >
-                    Финализирай поръчката
-                  </Link>
                 </div>
               )}
             </Dialog.Panel>

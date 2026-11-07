@@ -17,7 +17,7 @@ import { AiPromptTips } from "components/ai-design/ai-prompt-tips";
 import { AiStylePicker } from "components/ai-design/ai-style-picker";
 import type { AiCartMeta, AiDesignVariant } from "lib/ai-design/types";
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const STORAGE_KEY = "paperok_ai_design_v1";
@@ -78,6 +78,8 @@ export function AiDesignStudio() {
   const [wishHint, setWishHint] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [designsStarted, setDesignsStarted] = useState(1);
+  const previewRef = useRef<HTMLElement>(null);
+  const shouldScrollToPreview = useRef(false);
 
   const format = useMemo(
     () => AI_FORMATS.find((f) => f.id === formatId)!,
@@ -205,6 +207,20 @@ export function AiDesignStudio() {
     if (!isCard) setFaceSide("front");
   }, [supportsFrame, withFrame, isCard]);
 
+  useEffect(() => {
+    if (!shouldScrollToPreview.current || generating || variants.length === 0) {
+      return;
+    }
+    shouldScrollToPreview.current = false;
+    const frame = window.requestAnimationFrame(() => {
+      previewRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [generating, variants]);
+
   const handleGenerate = useCallback(async () => {
     setError(null);
     setGenerating(true);
@@ -237,6 +253,7 @@ export function AiDesignStudio() {
         setVariants(data.variants || []);
         setSelectedVariantId(data.selectedVariantId || null);
         setFaceSide("front");
+        shouldScrollToPreview.current = true;
         if (data.warning) {
           toast.message(data.warning, { duration: 8000 });
         }
@@ -547,7 +564,10 @@ export function AiDesignStudio() {
         </button>
       </section>
 
-      <section className="space-y-4 rounded-2xl border border-paper-border bg-white/80 p-5 shadow-sm sm:p-6">
+      <section
+        ref={previewRef}
+        className="scroll-mt-24 space-y-4 rounded-2xl border border-paper-border bg-white/80 p-5 shadow-sm sm:p-6"
+      >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-paper-heading">
             Преглед на {isCard ? "картичката" : "постера"}
