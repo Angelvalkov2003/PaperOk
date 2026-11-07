@@ -62,7 +62,7 @@ export const AI_STYLES = [
     summary:
       "Мека, ръчно рисувана визия с нежни цветови преливания. Подходящ за рождени дни, благодарствени и романтични картички.",
     promptGuidance:
-      "Watercolor illustration style: soft hand-painted washes, gentle color bleeds and gradients, translucent pigment on textured paper, delicate brush edges, romantic and tender mood. Avoid hard outlines, flat vector shapes, and harsh contrast.",
+      "Watercolor illustration style: soft hand-painted washes, gentle color bleeds and gradients, translucent pigment on a clean white background, delicate brush edges, romantic and tender mood. Avoid hard outlines, flat vector shapes, harsh contrast, paper texture, and decorative borders/frames.",
   },
   {
     id: "botanical",
@@ -86,7 +86,7 @@ export const AI_STYLES = [
     summary:
       "Балансирана подредба и фини декоративни акценти. Подходящ за юбилеи, официални поздрави и специални семейни поводи.",
     promptGuidance:
-      "Classic elegant style: balanced formal layout, refined decorative accents (subtle flourishes, soft frames, delicate ornaments), timeless and ceremonial mood for anniversaries and formal family occasions. Avoid childish motifs, neon colors, and sparse ultra-minimal emptiness.",
+      "Classic elegant style: balanced formal layout, refined decorative accents (subtle flourishes, delicate ornaments), timeless and ceremonial mood for anniversaries and formal family occasions. Avoid outer frames/borders around the design, childish motifs, neon colors, and sparse ultra-minimal emptiness.",
   },
   {
     id: "playful",

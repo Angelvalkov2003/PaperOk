@@ -19,7 +19,6 @@ import {
   updateAiProject,
 } from "lib/ai-design/db";
 import { generateAiDesignImage } from "lib/ai-design/openai-client";
-import { isAiPreviewRequest } from "lib/ai-design/preview-auth";
 
 function newLocalId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -27,13 +26,6 @@ function newLocalId(prefix: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    if (!isAiPreviewRequest(request)) {
-      return NextResponse.json(
-        { error: "AI дизайнът е в тестов режим. Въведете preview парола." },
-        { status: 401 },
-      );
-    }
-
     if (!process.env.OPENAI_API_KEY?.trim()) {
       return NextResponse.json(
         { error: "OpenAI не е конфигуриран" },

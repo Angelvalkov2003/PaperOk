@@ -398,10 +398,6 @@ function DesktopNav({ categories }: { categories: FlatCategory[] }) {
           );
         }
 
-        if (item.path === "/ai-design") {
-          return null;
-        }
-
         return (
           <li key={item.path} className="group">
             <NavLink href={item.path} title={item.title} />
@@ -437,24 +433,21 @@ export function NavbarClient() {
   return (
     <header className="sticky top-0 z-40 overflow-visible border-b border-paper-border-strong/70 bg-paper-surface">
       <nav className="relative z-10 mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8 lg:py-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center">
-            <Link
-              href="/"
-              prefetch={true}
-              className="flex shrink-0 items-center"
-              aria-label="PaperOK — начална страница"
-            >
-              <SiteLogo
-                priority
-                responsive
-                className="h-11 w-auto sm:h-14 md:h-16 lg:h-[4.25rem] xl:h-[4.75rem]"
-              />
-            </Link>
-            <AiNavCta variant="desktop" />
-          </div>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Link
+            href="/"
+            prefetch={true}
+            className="flex shrink-0 items-center"
+            aria-label="PaperOK — начална страница"
+          >
+            <SiteLogo
+              priority
+              responsive
+              className="h-11 w-auto sm:h-14 md:h-16 lg:h-[4.25rem] xl:h-[4.75rem]"
+            />
+          </Link>
 
-          <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2 md:justify-center">
             <div className="hidden md:block">
               <Suspense fallback={<SearchSkeleton compact />}>
                 <Search compact />
@@ -464,6 +457,10 @@ export function NavbarClient() {
               <SearchToggle />
             </div>
             <CartModal />
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <AiNavCta variant="desktop" />
             <div className="lg:hidden">
               <Suspense fallback={null}>
                 <MobileMenu menu={[...FIXED_MENU]} categories={categories} />

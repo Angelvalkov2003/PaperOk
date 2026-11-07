@@ -345,6 +345,7 @@ export default function MobileMenu({
 
                 <ul className="flex w-full flex-col gap-1">
                   {menu.map((item) => {
+                    // CTA above already highlights AI — skip duplicate list entry
                     if (item.path === "/ai-design") return null;
 
                     const handle = collectionFromPath(item.path);

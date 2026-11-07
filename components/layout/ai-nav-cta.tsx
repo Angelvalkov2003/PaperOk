@@ -40,7 +40,7 @@ export function AiNavCta({ variant, onNavigate }: Props) {
       <Link
         href="/ai-design"
         prefetch={true}
-        className="ai-nav-cta-pulse group relative ml-2 hidden items-center gap-2 rounded-full border border-paper-border/90 bg-[#F3F0E6] py-1 pl-1.5 pr-3 shadow-sm transition hover:-translate-y-0.5 hover:border-paper-green/45 hover:shadow-md lg:inline-flex"
+        className="ai-nav-cta-pulse group relative hidden items-center gap-2 rounded-full border border-paper-border/90 bg-[#F3F0E6] py-1 pl-1.5 pr-3 shadow-sm transition hover:-translate-y-0.5 hover:border-paper-green/45 hover:shadow-md lg:inline-flex"
         aria-label="Създай картичка с AI"
       >
         <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white/70 ring-1 ring-paper-border/70">

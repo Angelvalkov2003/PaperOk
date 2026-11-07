@@ -53,8 +53,7 @@ export function buildImagePrompt(params: {
     ? [
         "TEXT ON THE CARD (mandatory — render this exactly in the image):",
         `The greeting text must appear clearly on the design, letter by letter exactly as written: «${text}».`,
-        "Use elegant readable typography: dark/black letters on a clean light or soft white paper panel near the lower third (or centered if it fits better).",
-        "The panel should look printed on seed paper — soft edges, natural, not a harsh UI box.",
+        "Use elegant readable typography: dark/black letters on the clean white background, placed near the lower third (or centered if it fits better).",
         "Bulgarian Cyrillic must be correct and sharp. Do not invent extra words, do not translate, do not misspell.",
         "No watermarks, logos, or extra captions besides this greeting.",
       ].join("\n")
@@ -64,8 +63,9 @@ export function buildImagePrompt(params: {
       ].join("\n");
 
   return [
-    `Create a high-quality decorative ${kind} illustration for PaperOK, a Bulgarian seed-paper eco brand.`,
-    "Base material feel: warm seed-paper texture, natural fibers visible where appropriate, print-ready.",
+    `Create a high-quality decorative ${kind} illustration for PaperOK, a Bulgarian eco stationery brand.`,
+    "Use a pure solid white background. Do NOT draw paper texture, fibers, speckles, seeds, or aged/recycled paper effects — those come from the real printed stock.",
+    "Do NOT add borders, frames, mats, or ornamental edges around the design.",
     "The final image IS the print preview — what the customer sees must match the downloadable file.",
     stylePromptPart(params.styles),
     textInstructions,
