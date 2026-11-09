@@ -57,7 +57,7 @@ export function AiNavCta({ variant, onNavigate }: Props) {
             Създай с AI
           </span>
           <span className="block text-[10px] font-medium text-paper-muted">
-            Пробвай сега
+            Ползвай сега
           </span>
         </span>
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper-green text-white transition group-hover:bg-paper-green-hover">

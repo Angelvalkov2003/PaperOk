@@ -9,7 +9,7 @@ export function AiHeroBanner() {
     >
       <div className="relative z-10 flex min-w-0 flex-1 flex-col justify-center py-5 pl-5 pr-2 sm:py-6 sm:pl-6 sm:pr-3">
         <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-paper-green sm:text-xs">
-          ✨ Ново · Създай сам
+          ✨ Готово · Ползвай сега
         </p>
         <h2 className="mt-2 font-heading text-xl font-semibold leading-tight text-paper-heading sm:text-2xl">
           Твоята идея. Твоята картичка.
