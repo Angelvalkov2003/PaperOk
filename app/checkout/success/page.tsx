@@ -6,6 +6,7 @@ import {
   paymentStatusLabel,
 } from "lib/order-status";
 import { ClearCartOnSuccess } from "components/cart/clear-cart-on-success";
+import { GoogleAdsPurchase } from "components/checkout/google-ads-purchase";
 
 export default async function CheckoutSuccessPage({
   searchParams,
@@ -56,6 +57,12 @@ export default async function CheckoutSuccessPage({
   return (
     <>
       <ClearCartOnSuccess />
+      {isAccepted && order ? (
+        <GoogleAdsPurchase
+          transactionId={order.id}
+          value={Number(order.total_price) || 0}
+        />
+      ) : null}
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
           <div className="mb-6">

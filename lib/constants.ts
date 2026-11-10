@@ -13,6 +13,10 @@ export const GOOGLE_ADS_ID = "AW-18454786172";
 export const GOOGLE_ADS_LEAD_CONVERSION_SEND_TO =
   "AW-18454786172/bFnkCK6M2vkcEPzg9t9E";
 
+/** Purchase conversion — checkout success only */
+export const GOOGLE_ADS_PURCHASE_CONVERSION_SEND_TO =
+  "AW-18454786172/bR_HCJOn5bUdEPzg9t9E";
+
 /** Transparent logo for UI on cream/colored backgrounds */
 export const LOGO_TRANSPARENT = "/logo-removebg-preview.png";
 

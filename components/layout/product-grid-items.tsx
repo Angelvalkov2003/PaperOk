@@ -18,7 +18,7 @@ export default function ProductGridItems({
           <Link
             className="relative inline-block h-full w-full"
             href={`/product/${product.handle}`}
-            prefetch={false}
+            prefetch={true}
           >
             <GridTileImage
               alt={product.title}
@@ -30,10 +30,11 @@ export default function ProductGridItems({
               }}
               src={product.featuredImage?.url}
               fill
-              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 50vw"
-              priority={eager || index < 4}
-              loading={eager || index < 4 ? "eager" : "lazy"}
-              fetchPriority={eager || index < 4 ? "high" : "auto"}
+              sizes="(min-width: 1024px) 25vw, (min-width: 640px) 40vw, 50vw"
+              quality={72}
+              priority={eager || index < 8}
+              loading={eager || index < 8 ? "eager" : "lazy"}
+              fetchPriority={eager || index < 6 ? "high" : "auto"}
             />
           </Link>
         </Grid.Item>

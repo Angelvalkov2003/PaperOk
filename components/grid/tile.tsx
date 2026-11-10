@@ -1,6 +1,12 @@
 "use client";
 
+import { SaleSticker } from "components/product/sale-sticker";
 import clsx from "clsx";
+import {
+  cloudinaryImageLoader,
+  isCloudinaryUrl,
+} from "lib/cloudinary-image";
+import { getSaleMeta } from "lib/sale-price";
 import Image from "next/image";
 import { memo } from "react";
 import Label from "../label";
@@ -11,6 +17,7 @@ export const GridTileImage = memo(function GridTileImage({
   label,
   className,
   unoptimized,
+  quality = 75,
   ...props
 }: {
   isInteractive?: boolean;
@@ -26,6 +33,10 @@ export const GridTileImage = memo(function GridTileImage({
   const src = typeof props.src === "string" ? props.src : "";
   const isLocalPlaceholder =
     src.startsWith("/placeholder") || src.endsWith(".svg");
+  const useCloudinary = isCloudinaryUrl(src);
+  const sale = label
+    ? getSaleMeta(label.amount, label.compareAtAmount)
+    : null;
 
   return (
     <div
@@ -40,6 +51,8 @@ export const GridTileImage = memo(function GridTileImage({
       {props.src ? (
         <Image
           {...props}
+          quality={quality}
+          loader={useCloudinary ? cloudinaryImageLoader : props.loader}
           unoptimized={isLocalPlaceholder || unoptimized}
           className={clsx(
             "relative h-full w-full object-contain",
@@ -49,6 +62,7 @@ export const GridTileImage = memo(function GridTileImage({
           )}
         />
       ) : null}
+      {sale ? <SaleSticker percent={sale.percent} compact /> : null}
       {label ? (
         <Label
           title={label.title}

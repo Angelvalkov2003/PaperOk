@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import Price from "./price";
+import SalePrice from "./sale-price";
 
 const Label = ({
   title,
@@ -14,44 +14,26 @@ const Label = ({
   currencyCode: string;
   position?: "bottom" | "center";
 }) => {
-  const hasComparePrice = compareAtAmount && parseFloat(compareAtAmount) > parseFloat(amount);
-  
   return (
     <div
       className={clsx(
-        "absolute bottom-0 left-0 flex w-full px-4 pb-4 @container/label",
+        "absolute bottom-0 left-0 flex w-full px-3 pb-3 @container/label sm:px-4 sm:pb-4",
         {
           "lg:px-20 lg:pb-[35%]": position === "center",
         },
       )}
     >
-      <div className="flex items-center rounded-full border bg-white/70 p-1 text-xs font-semibold text-paper-heading backdrop-blur-md">
-        <h3 className="mr-2 line-clamp-2 grow pl-2 leading-none tracking-tight min-w-0">
+      <div className="flex max-w-full items-center gap-1.5 rounded-full border border-paper-border/60 bg-white/75 p-1 text-xs font-semibold text-paper-heading backdrop-blur-md">
+        <h3 className="min-w-0 flex-1 truncate px-2 leading-none tracking-tight">
           {title}
         </h3>
-        <div className="flex-none rounded-full bg-paper-section px-1.5 py-0.5 text-paper-heading text-[10px]">
-          {hasComparePrice ? (
-            <div className="flex items-center gap-0.5 flex-wrap">
-              <span className="text-red-600 line-through text-[9px] whitespace-nowrap">
-                <Price
-                  amount={compareAtAmount}
-                  currencyCode={currencyCode}
-                  currencyCodeClassName="hidden"
-                />
-              </span>
-              <Price
-                amount={amount}
-                currencyCode={currencyCode}
-                currencyCodeClassName="hidden @[275px]/label:inline"
-              />
-            </div>
-          ) : (
-            <Price
-              amount={amount}
-              currencyCode={currencyCode}
-              currencyCodeClassName="hidden @[275px]/label:inline"
-            />
-          )}
+        <div className="flex h-7 flex-none items-center justify-center rounded-full bg-paper-section px-2.5">
+          <SalePrice
+            amount={amount}
+            compareAtAmount={compareAtAmount}
+            currencyCode={currencyCode}
+            size="compact"
+          />
         </div>
       </div>
     </div>

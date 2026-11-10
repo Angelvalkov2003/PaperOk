@@ -4,8 +4,10 @@ import { Gallery } from "components/product/gallery";
 import { BackButton } from "components/product/back-button";
 import { ProductDescription } from "components/product/product-description";
 import { ProductTabs } from "components/product/product-tabs";
+import { SaleSticker } from "components/product/sale-sticker";
 import { PaperTexture } from "components/ui/paper-texture";
 import { PAPER_BACKGROUNDS } from "lib/backgrounds";
+import { getSaleMeta } from "lib/sale-price";
 import { getProduct, getProducts } from "lib/supabase/products";
 import type { Image } from "lib/types";
 import { baseUrl } from "lib/utils";
@@ -86,6 +88,8 @@ export default async function ProductPage(props: {
 
   if (!product) return notFound();
 
+  const sale = getSaleMeta(product.price, product.compareAtPrice);
+
   const galleryImages = [
     {
       src: product.featuredImage?.url || "",
@@ -139,7 +143,10 @@ export default async function ProductPage(props: {
               quality={75}
             />
             <div className="animate-fade-in relative z-10 h-full w-full basis-full lg:basis-4/6">
-              <Gallery images={galleryImages} />
+              <div className="relative">
+                {sale ? <SaleSticker percent={sale.percent} /> : null}
+                <Gallery images={galleryImages} />
+              </div>
             </div>
 
             <div className="animate-fade-in-up animate-delay-100 relative z-10 basis-full lg:basis-2/6">

@@ -12,6 +12,11 @@ import {
   LOGO_TRANSPARENT_SIZE,
   SITE_NAME,
 } from "lib/constants";
+import {
+  cloudinaryImageLoader,
+  isCloudinaryUrl,
+  withCloudinaryTransforms,
+} from "lib/cloudinary-image";
 import Image from "next/image";
 import {
   Fragment,
@@ -28,9 +33,9 @@ const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.35;
 const CLICK_ZOOM = 2.5;
 const TAP_MOVE_THRESHOLD = 8;
-/** Soft minimum so the logo pulse is visible, without feeling stuck. */
-const GALLERY_MIN_LOADER_MS = 520;
-const GALLERY_IMAGE_SIZES = "(min-width: 1024px) 66vw, 100vw";
+/** Brief pulse so layout doesn't flash empty — keep short for perceived speed. */
+const GALLERY_MIN_LOADER_MS = 120;
+const GALLERY_IMAGE_SIZES = "(min-width: 1024px) 55vw, 92vw";
 
 type GalleryImage = { src: string; altText: string };
 
@@ -334,7 +339,14 @@ function GalleryLightbox({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={current.src}
+                    src={
+                      isCloudinaryUrl(current.src)
+                        ? withCloudinaryTransforms(current.src, {
+                            width: 1600,
+                            quality: 80,
+                          })
+                        : current.src
+                    }
                     alt={current.altText}
                     draggable={false}
                     className="max-h-[100dvh] max-w-[100vw] select-none object-contain"
@@ -386,20 +398,20 @@ export function Gallery({
     setCurrentReady(loadedSrcsRef.current.has(src));
   }, [currentIndex, images]);
 
-  // After the first visible image is ready, warm the rest one-by-one (next first).
+  // After the first visible image is ready, warm the rest quickly (next first).
   useEffect(() => {
     if (!firstImageReady || images.length < 2) return;
 
     if (preloadCount === 0) {
-      setPreloadCount(1);
+      setPreloadCount(Math.min(2, images.length - 1));
       return;
     }
 
     if (preloadCount >= images.length - 1) return;
 
     const timer = window.setTimeout(() => {
-      setPreloadCount((n) => Math.min(n + 1, images.length - 1));
-    }, 100);
+      setPreloadCount((n) => Math.min(n + 2, images.length - 1));
+    }, 40);
     return () => window.clearTimeout(timer);
   }, [firstImageReady, preloadCount, images.length]);
 
@@ -481,6 +493,11 @@ export function Gallery({
             alt={current.altText}
             src={current.src}
             priority
+            quality={78}
+            fetchPriority="high"
+            loader={
+              isCloudinaryUrl(current.src) ? cloudinaryImageLoader : undefined
+            }
             onLoad={onMainLoad}
             unoptimized={
               current.src.startsWith("/placeholder") ||
@@ -502,9 +519,13 @@ export function Gallery({
               key={`preload-${image.src}`}
               src={image.src}
               alt=""
-              width={1200}
-              height={1200}
+              width={900}
+              height={900}
               sizes={GALLERY_IMAGE_SIZES}
+              quality={72}
+              loader={
+                isCloudinaryUrl(image.src) ? cloudinaryImageLoader : undefined
+              }
               onLoad={() => markLoaded(image.src)}
               unoptimized={
                 image.src.startsWith("/placeholder") ||
@@ -562,6 +583,8 @@ export function Gallery({
                     src={image.src}
                     width={80}
                     height={80}
+                    sizes="80px"
+                    quality={70}
                     active={isActive}
                   />
                 </button>

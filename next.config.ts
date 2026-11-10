@@ -7,7 +7,10 @@ export default {
   images: {
     formats: ["image/avif", "image/webp"],
     // Next 15+ only allows listed qualities on <Image quality={...} />
-    qualities: [70, 75, 80, 82, 85, 86, 88, 90, 92, 95, 100],
+    qualities: [70, 72, 75, 78, 80, 82, 85, 86, 88, 90, 92, 95, 100],
+    // Prefer smaller candidates for product grids on phone/desktop.
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [64, 80, 96, 128, 256, 384],
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",

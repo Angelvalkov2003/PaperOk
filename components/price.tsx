@@ -5,11 +5,14 @@ const Price = ({
   className,
   currencyCode = "EUR",
   currencyCodeClassName,
+  showCurrencyCode = true,
 }: {
   amount: string;
   className?: string;
-  currencyCode: string;
+  currencyCode?: string;
   currencyCodeClassName?: string;
+  /** When false, only the localized amount (e.g. 49,90 €) is shown. */
+  showCurrencyCode?: boolean;
 } & React.ComponentProps<"span">) => {
   const formatted = new Intl.NumberFormat("bg-BG", {
     style: "currency",
@@ -17,17 +20,22 @@ const Price = ({
     currencyDisplay: "narrowSymbol",
   }).format(parseFloat(amount));
 
+  const hideCode =
+    !showCurrencyCode ||
+    currencyCodeClassName === "hidden" ||
+    currencyCodeClassName?.includes("hidden");
+
   return (
     <span
       suppressHydrationWarning={true}
-      className={clsx("inline-block whitespace-nowrap", className)}
+      className={clsx("whitespace-nowrap leading-none", className)}
     >
-      <span>
-        {formatted}
-        <span className={clsx("ml-1 inline", currencyCodeClassName)}>
+      {formatted}
+      {!hideCode ? (
+        <span className={clsx("ml-1", currencyCodeClassName)}>
           {currencyCode}
         </span>
-      </span>
+      ) : null}
     </span>
   );
 };

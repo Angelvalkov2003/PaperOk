@@ -253,7 +253,7 @@ export function AddToCart({ product }: { product: Product }) {
           </p>
         ) : (
           <>
-            <div className="text-lg font-medium">
+            <div className="text-lg font-medium text-paper-heading">
               <Price amount={displayPrice.toString()} currencyCode="EUR" />
               <span className="ml-1 text-sm font-normal text-paper-muted">
                 / бр.
